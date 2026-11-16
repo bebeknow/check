@@ -1,4 +1,4 @@
-// 고객 페이지 조립: head(스타일·본문) + script + 내장 목록. 실행: node sink-build.js <outDir> <version>
+// 고객 페이지 조립: head(스타일·본문) + script. 목록은 넣지 않는다(경쟁사 유출 방지, 서버 ?sink=find). 실행: node sink-build.js <outDir> <version>
 const fs = require('fs'), path = require('path');
 const D = __dirname, [OUT, VER] = process.argv.slice(2);
 let head = fs.readFileSync(path.join(D, 'sink-head.html'), 'utf8');
@@ -13,9 +13,8 @@ const css = `  .req { display: grid; gap: 10px; margin-top: 14px; text-align: le
 `;
 if (!head.includes('.req {')) head = head.replace('  footer { text-align: center;', css + '  footer { text-align: center;');
 head = head.replace(/v2026\.\d+\.\d+-\d+<\/footer>/, VER + '</footer>');
-let script = fs.readFileSync(path.join(D, 'sink-script.html'), 'utf8')
-  .replace('__DATA__', fs.readFileSync(path.join(D, 'sinkdata.json'), 'utf8')).replace('__ASOF__', '2026-11-16');
+let script = fs.readFileSync(path.join(D, 'sink-script.html'), 'utf8');   // v63: 목록은 넣지 않음 (서버에서 품번 찾기)
 const html = head + script;
-new Function(html.match(/<script>([\s\S]*)<\/script>/)[1].replace(/\$\("/g, '(()=>({addEventListener(){},set textContent(v){},set innerHTML(v){},set hidden(v){},set href(v){},children:[]}))("')); // 문법 검사만
+new Function(html.match(/<script>([\s\S]*)<\/script>/)[1]); // 문법 검사만
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
 console.log('ok', html.length);

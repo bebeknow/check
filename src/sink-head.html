@@ -31,6 +31,8 @@
   .lead { margin: 0; color: var(--ink2); font-size: 15px; }
   .search { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 10px 0 8px; }
   .box { display: flex; align-items: center; gap: 8px; background: var(--card); border: 2px solid var(--brand); border-radius: 14px; padding: 4px 6px 4px 14px; }
+  .box button { flex: 0 0 auto; border: 0; border-radius: 10px; background: var(--brand); color: #fff; font-size: 16px; font-weight: 700; padding: 10px 16px; cursor: pointer; }
+  .box button:disabled { opacity: .6; }
   .box input { flex: 1; min-width: 0; border: 0; outline: 0; font-size: 18px; padding: 10px 0; background: transparent; color: var(--ink); }
   .hint { font-size: 13px; color: var(--ink2); margin: 6px 2px 0; }
   .chips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 4px; scrollbar-width: none; }
@@ -70,17 +72,16 @@
     <p class="lead">세면대 품번을 검색하면 베베노 아기비데<br>설치 가능 여부를 알려드려요.</p>
   </header>
 
-  <div class="search">
-    <label class="box">
-      <input id="q" type="search" inputmode="search" autocomplete="off" placeholder="예: CL-831, L751, 대림" aria-label="세면대 품번 또는 브랜드">
-    </label>
-    <p class="hint">품번은 세면대 아래쪽이나 설치 설명서, 아파트 시공 자료에서 찾을 수 있어요. 띄어쓰기·하이픈은 빼고 쳐도 돼요.</p>
-    <div class="chips" id="chips" role="group" aria-label="브랜드로 보기"></div>
-  </div>
+  <form class="search" id="sform" role="search">
+    <div class="box">
+      <input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="세면대 품번 (예: CL-831)" aria-label="세면대 품번">
+      <button type="submit" id="go">검색</button>
+    </div>
+    <p class="hint">품번을 4글자 이상 입력해 주세요. 품번은 세면대 아래쪽이나 설치 설명서, 아파트 시공 자료에서 찾을 수 있어요.</p>
+  </form>
 
   <p class="meta" id="meta"></p>
   <div class="list" id="list"></div>
-  <button class="more" id="more" type="button" hidden>더 보기</button>
 
   <section class="guide">
     <h2>목록에 없거나 품번을 모르시나요?</h2>
@@ -93,6 +94,6 @@
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
   </section>
 
-  <footer>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 (기준 <span id="asof"></span>) · v2026.11.16-1</footer>
+  <footer>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 · v2026.11.16-1</footer>
 </div>
 
