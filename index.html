@@ -101,7 +101,7 @@
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
   </section>
 
-  <footer>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 (기준 <span id="asof"></span>) · v2026.11.16-3</footer>
+  <footer>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 (기준 <span id="asof"></span>) · v2026.11.16-4</footer>
 </div>
 
 
@@ -129,10 +129,13 @@ const ko = b => BRAND[b] || b;
 const talkBtn = label => TALK_URL ? `<a class="talk" href="${TALK_URL}" target="_blank" rel="noopener">${label}</a>` : "";
 let rows = [], brand = "", shown = PAGE, sentReq = {}, missTimer = 0;
 
-function setData(list, asof) {
+let brandOrder = Object.keys(BRAND);
+function setData(list, asof, brandList) {
+  if (Array.isArray(brandList) && brandList.length) { brandOrder = brandList.map(x => x[0]); brandList.forEach(([b, k]) => { if (k) BRAND[b] = k; }); }
   rows = list.map(([b, m, st]) => ({ b, m, st: +st || 0, ko: ko(b), key: norm(m), bkey: norm(b) + norm(ko(b)) }));
   $("asof").textContent = asof;
-  const brands = [...new Set(rows.map(r => r.b))];
+  const have = new Set(rows.map(r => r.b));
+  const brands = brandOrder.filter(b => have.has(b)).concat([...have].filter(b => !brandOrder.includes(b)));
   if (brand && !brands.includes(brand)) brand = "";
   $("chips").innerHTML = [`<button class="chip" type="button" data-b="" aria-pressed="${!brand}">전체</button>`]
     .concat(brands.map(b => `<button class="chip" type="button" data-b="${esc(b)}" aria-pressed="${b === brand}">${esc(ko(b))}</button>`)).join("");
@@ -245,8 +248,8 @@ setData(DATA, AS_OF);
     // 입력 중인 양식이 날아가지 않게, 요청 양식을 쓰는 중이면 목록만 바꾸고 다시 그리지 않음
     if (!(j && j.status === "ok" && Array.isArray(j.list) && j.list.length)) return;
     const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest("#reqForm");
-    if (typing) { rows = j.list.map(([b, m, st]) => ({ b, m, st: +st || 0, ko: ko(b), key: norm(m), bkey: norm(b) + norm(ko(b)) })); return; }
-    setData(j.list, (j.at || "").slice(0, 10) || AS_OF);
+    if (typing) { if (Array.isArray(j.brands)) j.brands.forEach(([b, k]) => { if (k) BRAND[b] = k; }); rows = j.list.map(([b, m, st]) => ({ b, m, st: +st || 0, ko: ko(b), key: norm(m), bkey: norm(b) + norm(ko(b)) })); return; }
+    setData(j.list, (j.at || "").slice(0, 10) || AS_OF, j.brands);
   }).catch(() => {}).finally(() => clearTimeout(t));
 })();
 </script>
