@@ -1,0 +1,148 @@
+
+<script>
+// 품번 목록: 서버(구글 시트 "세면대" 탭)에서 받는다. 못 받으면 아래 내장 목록(올린 날 기준)으로.
+// [브랜드, 품번, 상태] — 상태 0 = 설치 가능, 1 = 확인 필요, 2 = 설치 어려움
+const DATA = __DATA__;
+const AS_OF = "__ASOF__";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwOrp74H1BYqzJ-8Wv7jv4q5qJ8K0qfA1z6YpHIRz-LsfTCHWrP8SoGe_8QYl51Q_zOew/exec";
+const TALK_URL = "https://talk.naver.com/W46FM2";
+const BRAND = {
+  "DAELIM": "대림바스", "inus": "이누스", "KELIM": "계림", "HANSSEM": "한샘", "DOOSUNG": "두성", "iNTO": "인토",
+  "DOBIDOS": "도비도스", "ROYAL": "로얄", "soolim": "수림", "CLINS": "클린스", "HAELIM": "해림", "AMERICAN STANDARD": "아메리칸스탠다드"
+};
+const STATUS = [
+  { cls: "ok", badge: "설치할 수 있어요", msg: "" },
+  { cls: "chk", badge: "확인이 필요해요", msg: "세면대 모양이나 두께에 따라 설치가 안 될 수 있어요. 세면대 앞쪽 테두리 사진을 보내 주시면 바로 알려드릴게요." },
+  { cls: "no", badge: "설치가 어려워요", msg: "이 세면대에는 설치가 어려워요. 다른 세면대에서 쓰실 수 있는지 궁금하시면 문의해 주세요." }
+];
+const PAGE = 30;
+const norm = s => String(s).toUpperCase().replace(/[^0-9A-Z가-힣]/g, "");
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ko = b => BRAND[b] || b;
+const talkBtn = label => TALK_URL ? `<a class="talk" href="${TALK_URL}" target="_blank" rel="noopener">${label}</a>` : "";
+let rows = [], brand = "", shown = PAGE, sentReq = {}, missTimer = 0;
+
+function setData(list, asof) {
+  rows = list.map(([b, m, st]) => ({ b, m, st: +st || 0, ko: ko(b), key: norm(m), bkey: norm(b) + norm(ko(b)) }));
+  $("asof").textContent = asof;
+  const brands = [...new Set(rows.map(r => r.b))];
+  if (brand && !brands.includes(brand)) brand = "";
+  $("chips").innerHTML = [`<button class="chip" type="button" data-b="" aria-pressed="${!brand}">전체</button>`]
+    .concat(brands.map(b => `<button class="chip" type="button" data-b="${esc(b)}" aria-pressed="${b === brand}">${esc(ko(b))}</button>`)).join("");
+  render();
+}
+if (TALK_URL) $("talkGuide").href = TALK_URL; else $("talkGuide").hidden = true;
+$("chips").addEventListener("click", e => {
+  const c = e.target.closest(".chip"); if (!c) return;
+  brand = c.dataset.b; shown = PAGE;
+  for (const x of $("chips").children) x.setAttribute("aria-pressed", String(x === c));
+  render();
+});
+
+function find() {
+  const q = norm($("q").value);
+  let list = rows.filter(r => !brand || r.b === brand);
+  if (q) {
+    list = list.filter(r => r.key.includes(q) || r.bkey.includes(q));
+    list.sort((a, b) => (b.key === q) - (a.key === q) || b.key.startsWith(q) - a.key.startsWith(q));
+  }
+  return { q, list };
+}
+
+function card(r) {
+  const s = STATUS[r.st] || STATUS[1];
+  const img = "https://search.naver.com/search.naver?where=image&query=" + encodeURIComponent(ko(r.b) + " 세면대 " + r.m);
+  return `<article class="item ${s.cls}">
+    <div class="row"><div><div class="model">${esc(r.m)}</div><div class="brand">${esc(r.ko)}</div></div><span class="badge">${s.badge}</span></div>
+    ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
+    <div class="links"><a href="${img}" target="_blank" rel="noopener">사진으로 확인하기 ↗</a></div>
+    ${r.st ? talkBtn("톡톡으로 사진 보내기") : ""}
+  </article>`;
+}
+
+/* 등록 안 된 품번: 확인 요청 양식 */
+function reqForm(raw) {
+  const done = sentReq[norm(raw)];
+  if (done) return `<div class="empty"><b>확인 요청을 받았어요</b>확인되는 대로 목록에 올려 드릴게요.${done === 2 ? "<br>남겨 주신 연락처로 결과를 알려드릴게요." : ""}<br>더 빨리 알고 싶으시면 톡톡으로 사진을 보내 주세요.${talkBtn("톡톡으로 사진 보내기")}</div>`;
+  const opts = [`<option value="">모르겠어요</option>`]
+    .concat([...new Set(rows.map(r => r.b))].map(b => `<option value="${esc(b)}">${esc(ko(b))}</option>`), [`<option value="기타">기타 브랜드</option>`]).join("");
+  return `<div class="empty"><b>아직 등록되지 않은 세면대예요</b>품번을 남겨 주시면 저희가 확인해서 목록에 올려 드릴게요.
+    <form class="req" id="reqForm">
+      <label>세면대 품번<input id="rq" maxlength="40" value="${esc(raw)}" required></label>
+      <label>브랜드<select id="rb">${opts}</select></label>
+      <label>연락처 (선택 · 결과를 문자로 받고 싶으시면)<input id="rp" type="tel" inputmode="tel" maxlength="13" placeholder="010-0000-0000"></label>
+      <label class="agree" id="agreeRow" hidden><input type="checkbox" id="ra"> 확인 결과 안내에만 쓰고, 안내 후 지우는 데 동의해요</label>
+      <button type="submit" id="rs">확인 요청 보내기</button>
+      <p class="rmsg" id="rmsg"></p>
+    </form>
+    ${talkBtn("사진으로 바로 물어보기 (톡톡)")}</div>`;
+}
+function bindReq() {
+  const f = $("reqForm"); if (!f) return;
+  $("rp").addEventListener("input", () => { $("agreeRow").hidden = !$("rp").value.trim(); });
+  f.addEventListener("submit", e => {
+    e.preventDefault();
+    const q = $("rq").value.trim(), phone = $("rp").value.replace(/\D/g, "");
+    if (norm(q).length < 2) { $("rmsg").textContent = "품번을 2글자 이상 적어 주세요."; return; }
+    if (phone && (phone.length < 10 || phone.length > 11)) { $("rmsg").textContent = "연락처를 다시 확인해 주세요."; return; }
+    if (phone && !$("ra").checked) { $("rmsg").textContent = "연락처를 남기시려면 동의에 체크해 주세요."; return; }
+    $("rs").disabled = true; $("rmsg").textContent = "보내는 중…";
+    post({ action: "sinkReq", kind: "request", q, brand: $("rb").value, phone }).then(r => {
+      if (r && r.status === "ok") { sentReq[norm($("q").value)] = sentReq[norm(q)] = phone ? 2 : 1; render(); }
+      else { $("rs").disabled = false; $("rmsg").textContent = "잠시 후 다시 보내 주세요. 급하시면 톡톡으로 물어봐 주세요."; }
+    }).catch(() => { $("rs").disabled = false; $("rmsg").textContent = "연결이 불안정해요. 잠시 후 다시 보내 주세요."; });
+  });
+}
+function post(body) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 20000);
+  return fetch(GAS_URL, { method: "POST", body: JSON.stringify(body), signal: ctl.signal, redirect: "follow" }).then(r => r.json()).finally(() => clearTimeout(t));
+}
+/* 검색했는데 없는 품번은 자동으로 기록 (같은 품번은 한 번만) — 어떤 세면대를 더 확인할지 정하는 데 씀 */
+function logMiss(raw) {
+  clearTimeout(missTimer);
+  const k = norm(raw);
+  if (k.length < 3 || /^[가-힣]+$/.test(k)) return;
+  missTimer = setTimeout(() => {
+    let seen = {}; try { seen = JSON.parse(sessionStorage.getItem("sinkMiss") || "{}"); } catch (e) {}
+    if (seen[k]) return;
+    seen[k] = 1; try { sessionStorage.setItem("sinkMiss", JSON.stringify(seen)); } catch (e) {}
+    post({ action: "sinkReq", kind: "miss", q: raw.trim() }).catch(() => {});
+  }, 2500);
+}
+
+function render() {
+  const { q, list } = find();
+  if (!list.length) {
+    $("meta").textContent = "";
+    $("list").innerHTML = q ? reqForm($("q").value.trim()) : `<div class="empty"><b>목록을 불러오는 중이에요</b></div>`;
+    $("more").hidden = true; bindReq();
+    if (q) logMiss($("q").value);
+    return;
+  }
+  clearTimeout(missTimer);
+  const ok = list.filter(r => r.st === 0).length;
+  $("meta").textContent = (q || brand ? "검색 결과 " : "등록된 세면대 ") + list.length + "개 · 설치 가능 " + ok + "개";
+  $("list").innerHTML = list.slice(0, shown).map(card).join("");
+  $("more").hidden = list.length <= shown;
+}
+$("q").addEventListener("input", () => {
+  if (brand) { brand = ""; for (const x of $("chips").children) x.setAttribute("aria-pressed", String(!x.dataset.b)); }
+  shown = PAGE; render();
+});
+$("more").addEventListener("click", () => { shown += PAGE; render(); });
+
+setData(DATA, AS_OF);
+(function load() {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 15000);
+  fetch(GAS_URL + "?sink=list", { signal: ctl.signal, redirect: "follow" }).then(r => r.json()).then(j => {
+    // 입력 중인 양식이 날아가지 않게, 요청 양식을 쓰는 중이면 목록만 바꾸고 다시 그리지 않음
+    if (!(j && j.status === "ok" && Array.isArray(j.list) && j.list.length)) return;
+    const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest("#reqForm");
+    if (typing) { rows = j.list.map(([b, m, st]) => ({ b, m, st: +st || 0, ko: ko(b), key: norm(m), bkey: norm(b) + norm(ko(b)) })); return; }
+    setData(j.list, (j.at || "").slice(0, 10) || AS_OF);
+  }).catch(() => {}).finally(() => clearTimeout(t));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>세면대 관리 · 베베노</title>
+<style>
+  :root { --bg: #f6f3ef; --card: #fff; --ink: #2b2420; --ink2: #6f655e; --line: #e6ddd3; --brand: #7a5a43;
+    --ok: #1e7a46; --ok-bg: #e7f5ec; --chk: #b86200; --chk-bg: #fff3e0; --no: #b3261e; --no-bg: #fdecea; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; font-size: 15px; line-height: 1.45; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 60px; }
+  h1 { font-size: 20px; margin: 4px 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 small { font-size: 13px; font-weight: 400; color: var(--ink2); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  input, select, textarea { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); width: 100%; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 9px 12px; }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+  button:disabled { opacity: .5; cursor: default; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  label.f { display: grid; gap: 4px; font-size: 13px; color: var(--ink2); }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tabs button { flex: 1; font-weight: 700; }
+  .tabs button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 8px 10px; font-size: 14px; background: #fff; color: var(--ink2); }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on.s0 { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+  .seg button.on.s1 { background: var(--chk-bg); color: var(--chk); font-weight: 700; }
+  .seg button.on.s2 { background: var(--no-bg); color: var(--no); font-weight: 700; }
+  .filters { display: grid; grid-template-columns: 1fr 140px 120px; gap: 8px; margin-bottom: 8px; }
+  .meta { font-size: 13px; color: var(--ink2); margin: 6px 2px 10px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .row:first-child { border-top: 0; }
+  .model { font-weight: 800; font-size: 16px; word-break: break-all; }
+  .sub { font-size: 12px; color: var(--ink2); }
+  .memo { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink2); }
+  .memo span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .memo button { padding: 4px 8px; font-size: 12px; }
+  .saving { opacity: .55; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+  .k-req { background: #e8eefc; color: #2a4fb3; }
+  .k-miss { background: #eee; color: #555; }
+  .req { padding: 12px 0; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+  .req:first-child { border-top: 0; }
+  .req .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .req.done { opacity: .55; }
+  .msg { font-size: 13px; min-height: 1.2em; margin: 6px 0 0; }
+  .msg.err { color: var(--no); } .msg.ok { color: var(--ok); }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #2b2420; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 9; }
+  .more { width: 100%; margin-top: 8px; }
+  @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>세면대 관리 <small><a href="./" target="_blank" rel="noopener">고객 화면 ↗</a><span id="who" hidden> · <b id="whoName"></b> · <a href="#" id="pwLink">비밀번호 변경</a> · <a href="#" id="logout">로그아웃</a></span></small></h1>
+
+  <!-- 로그인 · 계정 만들기 -->
+  <div id="auth" hidden>
+    <div class="tabs" id="authTabs">
+      <button type="button" data-auth="in" aria-pressed="true">로그인</button>
+      <button type="button" data-auth="up" aria-pressed="false">계정 만들기</button>
+    </div>
+    <form class="card" id="login">
+      <label class="f">아이디<input id="lid" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label class="f" style="margin-top:8px">비밀번호<input type="password" id="lpw" autocomplete="current-password" required></label>
+      <button class="primary" style="margin-top:12px;width:100%">로그인</button>
+      <p class="msg" id="loginMsg"></p>
+    </form>
+    <form class="card" id="signup" hidden>
+      <label class="f">아이디 (영문 소문자·숫자·_ 3~20자)<input id="sid" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label class="f" style="margin-top:8px">이름 (수정한 사람으로 표시돼요)<input id="sname" maxlength="20" required></label>
+      <label class="f" style="margin-top:8px">비밀번호 (8자 이상)<input type="password" id="spw" autocomplete="new-password" required></label>
+      <label class="f" style="margin-top:8px">비밀번호 다시<input type="password" id="spw2" autocomplete="new-password" required></label>
+      <button class="primary" style="margin-top:12px;width:100%">계정 만들기</button>
+      <p class="msg" id="signupMsg"></p>
+      <p class="sub" style="margin:4px 0 0">만든 계정은 관리자가 승인해야 로그인할 수 있어요.</p>
+    </form>
+  </div>
+
+  <!-- 비밀번호 변경 -->
+  <form class="card" id="pwForm" hidden>
+    <b>비밀번호 변경</b>
+    <label class="f" style="margin-top:8px">지금 비밀번호<input type="password" id="pOld" autocomplete="current-password" required></label>
+    <label class="f" style="margin-top:8px">새 비밀번호 (8자 이상)<input type="password" id="pNew" autocomplete="new-password" required></label>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="primary" style="flex:1">바꾸기</button><button type="button" id="pCancel">닫기</button></div>
+    <p class="msg" id="pwMsg"></p>
+  </form>
+
+  <div id="app" hidden>
+    <div class="tabs" id="mainTabs">
+      <button type="button" data-tab="list" aria-pressed="true">세면대 목록</button>
+      <button type="button" data-tab="reqs" aria-pressed="false">확인 요청 <span id="reqCount"></span></button>
+      <button type="button" data-tab="accs" aria-pressed="false" hidden id="accTabBtn">계정 <span id="accCount"></span></button>
+    </div>
+
+    <!-- 목록 탭 -->
+    <section id="tab-list">
+      <form class="card" id="addForm">
+        <b id="addTitle">세면대 등록</b>
+        <div class="grid2" style="margin-top:10px">
+          <label class="f">브랜드<input id="aBrand" list="brandList" required placeholder="예: DAELIM"></label>
+          <label class="f">품번<input id="aModel" required placeholder="예: CL-831"></label>
+        </div>
+        <div style="margin:10px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span class="sub">설치 가능 여부</span>
+          <div class="seg" id="aSt">
+            <button type="button" class="s0" data-st="0">가능</button><button type="button" class="s1 on" data-st="1">확인 필요</button><button type="button" class="s2" data-st="2">불가</button>
+          </div>
+        </div>
+        <label class="f" style="margin-top:10px">메모 (고객에게 안 보임)<input id="aMemo" maxlength="300" placeholder="예: 앞턱 7cm, 11/16 매장 확인"></label>
+        <div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="aBtn" style="flex:1">등록</button><button type="button" id="aCancel" hidden>취소</button></div>
+        <p class="msg" id="addMsg"></p>
+        <datalist id="brandList"></datalist>
+      </form>
+
+      <div class="card">
+        <div class="filters">
+          <input id="fq" type="search" placeholder="품번·브랜드 찾기">
+          <select id="fb"><option value="">모든 브랜드</option></select>
+          <select id="fs"><option value="">모든 상태</option><option value="0">가능</option><option value="1">확인 필요</option><option value="2">불가</option></select>
+        </div>
+        <div class="meta" id="listMeta"></div>
+        <div id="rows"></div>
+        <button class="more" id="more" hidden>더 보기</button>
+      </div>
+    </section>
+
+    <!-- 요청 탭 -->
+    <section id="tab-reqs" hidden>
+      <div class="card">
+        <div class="filters" style="grid-template-columns:1fr 1fr">
+          <select id="rk"><option value="확인 요청">고객 확인 요청</option><option value="검색 실패">검색했는데 없던 품번</option><option value="">전체</option></select>
+          <select id="rd"><option value="open">처리 안 한 것</option><option value="">처리한 것도 보기</option></select>
+        </div>
+        <div class="meta">고객이 남긴 연락처는 결과를 알려드린 뒤 시트("세면대 확인요청" 탭)에서 지워 주세요.</div>
+        <div id="reqs"></div>
+      </div>
+    </section>
+
+    <!-- 계정 탭 (관리자만) -->
+    <section id="tab-accs" hidden>
+      <div class="card">
+        <div class="meta">새로 만든 계정은 "대기"예요. 승인해야 로그인할 수 있어요. 관리자는 다른 계정을 승인·중지할 수 있어요.</div>
+        <div id="accs"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwOrp74H1BYqzJ-8Wv7jv4q5qJ8K0qfA1z6YpHIRz-LsfTCHWrP8SoGe_8QYl51Q_zOew/exec";
+const TK = "checkAdminToken";
+const ST = ["가능", "확인 필요", "불가"];
+const BRAND = { "DAELIM": "대림바스", "inus": "이누스", "KELIM": "계림", "HANSSEM": "한샘", "DOOSUNG": "두성", "iNTO": "인토", "DOBIDOS": "도비도스", "ROYAL": "로얄", "soolim": "수림", "CLINS": "클린스", "HAELIM": "해림", "AMERICAN STANDARD": "아메리칸스탠다드" };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const norm = s => String(s).toUpperCase().replace(/[^0-9A-Z가-힣]/g, "");
+const key = (b, m) => String(b).trim().toUpperCase() + "|" + norm(m);
+const ko = b => BRAND[b] ? b + " · " + BRAND[b] : b;
+let token = "", rows = [], reqs = [], shown = 60, editing = null, addSt = 1;
+
+function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
+function toast(t) { const el = $("toast"); el.textContent = t; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 2200); }
+function call(url, opt) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
+  return fetch(url, Object.assign({ signal: ctl.signal, redirect: "follow" }, opt || {})).then(r => r.json()).finally(() => clearTimeout(t));
+}
+const post = body => call(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ token }, body)) });
+const say = (id, text, cls) => { $(id).className = "msg" + (cls ? " " + cls : ""); $(id).textContent = text; };
+function showAuth(msg) {
+  token = ""; me = null; store(TK, null);
+  $("app").hidden = true; $("who").hidden = true; $("pwForm").hidden = true; $("auth").hidden = false;
+  if (msg) say("loginMsg", msg, "err");
+}
+const unauth = () => showAuth("다시 로그인해 주세요.");
+const netErr = id => say(id, "연결이 안 돼요. 잠시 후 다시 해 주세요.", "err");
+
+/* ── 로그인 · 계정 만들기 ── */
+$("authTabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  [...$("authTabs").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("login").hidden = b.dataset.auth !== "in"; $("signup").hidden = b.dataset.auth !== "up";
+});
+$("login").addEventListener("submit", e => {
+  e.preventDefault();
+  say("loginMsg", "확인 중…");
+  call(GAS_URL, { method: "POST", body: JSON.stringify({ action: "sinkLogin", id: $("lid").value.trim().toLowerCase(), pw: $("lpw").value }) }).then(r => {
+    if (r.status === "ok" && r.token) { token = r.token; store(TK, token); $("lpw").value = ""; say("loginMsg", ""); start(); return; }
+    say("loginMsg", { wait: "아직 승인 전이에요. 관리자에게 승인을 요청해 주세요.", stopped: "사용이 중지된 계정이에요. 관리자에게 문의해 주세요.",
+      locked: "여러 번 틀려서 10분 동안 잠겼어요. 잠시 후 다시 해 주세요." }[r.status] || "아이디 또는 비밀번호가 맞지 않아요.", "err");
+  }).catch(() => netErr("loginMsg"));
+});
+$("signup").addEventListener("submit", e => {
+  e.preventDefault();
+  const id = $("sid").value.trim().toLowerCase(), name = $("sname").value.trim(), pw = $("spw").value;
+  if (!/^[a-z0-9_]{3,20}$/.test(id)) return say("signupMsg", "아이디는 영문 소문자·숫자·_ 3~20자로 만들어 주세요.", "err");
+  if (pw.length < 8) return say("signupMsg", "비밀번호는 8자 이상으로 해 주세요.", "err");
+  if (pw !== $("spw2").value) return say("signupMsg", "비밀번호 두 개가 달라요.", "err");
+  say("signupMsg", "만드는 중…");
+  call(GAS_URL, { method: "POST", body: JSON.stringify({ action: "sinkSignup", id, name, pw }) }).then(r => {
+    if (r.status === "ok") {
+      $("signup").reset(); $("authTabs").children[0].click(); $("lid").value = id;
+      say("loginMsg", "계정을 만들었어요. 관리자가 승인하면 로그인할 수 있어요.", "ok");
+    } else say("signupMsg", r.status === "dup" ? "이미 있는 아이디예요." : r.status === "busy" ? "잠시 후 다시 해 주세요." : "입력한 내용을 다시 확인해 주세요.", "err");
+  }).catch(() => netErr("signupMsg"));
+});
+$("logout").addEventListener("click", e => { e.preventDefault(); post({ action: "sinkLogout" }).catch(() => {}); showAuth(""); });
+
+/* ── 비밀번호 변경 ── */
+$("pwLink").addEventListener("click", e => { e.preventDefault(); $("pwForm").hidden = false; say("pwMsg", ""); $("pOld").focus(); });
+$("pCancel").addEventListener("click", () => { $("pwForm").reset(); $("pwForm").hidden = true; });
+$("pwForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if ($("pNew").value.length < 8) return say("pwMsg", "새 비밀번호는 8자 이상으로 해 주세요.", "err");
+  say("pwMsg", "바꾸는 중…");
+  post({ action: "sinkPw", old: $("pOld").value, pw: $("pNew").value }).then(r => {
+    if (r.status === "unauth") return unauth();
+    if (r.status === "ok") { $("pwForm").reset(); say("pwMsg", "바꿨어요.", "ok"); setTimeout(() => $("pwForm").hidden = true, 1500); }
+    else say("pwMsg", r.status === "wrong" ? "지금 비밀번호가 맞지 않아요." : "다시 확인해 주세요.", "err");
+  }).catch(() => netErr("pwMsg"));
+});
+
+let me = null, accs = [];
+function start() {
+  $("auth").hidden = true; $("app").hidden = false;
+  $("listMeta").textContent = "불러오는 중…";
+  call(GAS_URL + "?sink=admin&token=" + encodeURIComponent(token)).then(r => {
+    if (r.status === "unauth") return unauth();
+    if (r.status !== "ok") { $("listMeta").textContent = "불러오지 못했어요. 새로고침해 주세요."; return; }
+    me = r.me; rows = r.rows; reqs = r.reqs; accs = r.accounts || [];
+    $("who").hidden = false; $("whoName").textContent = me.name + (me.role === "관리자" ? " (관리자)" : "");
+    $("accTabBtn").hidden = me.role !== "관리자";
+    refreshBrands(); renderList(); renderReqs(); renderAccs();
+  }).catch(() => { $("listMeta").textContent = "연결이 안 돼요. 새로고침해 주세요."; });
+}
+
+/* ── 탭 ── */
+$("mainTabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  [...$("mainTabs").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  ["list", "reqs", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
+});
+function showTab(t) { $("mainTabs").querySelector(`[data-tab="${t}"]`).click(); }
+
+/* ── 계정 (관리자) ── */
+function renderAccs() {
+  if (!me || me.role !== "관리자") return;
+  const wait = accs.filter(a => a.status === "대기").length;
+  $("accCount").textContent = wait ? `(${wait})` : "";
+  const order = { "대기": 0, "승인": 1, "중지": 2 };
+  $("accs").innerHTML = [...accs].sort((a, b) => order[a.status] - order[b.status]).map(a => {
+    const self = a.id === me.id;
+    const btn = (label, body) => `<button type="button" data-acc="${esc(a.id)}" data-body='${esc(JSON.stringify(body))}'>${label}</button>`;
+    return `<div class="req${a.status === "중지" ? " done" : ""}">
+      <div><span class="badge ${a.status === "승인" ? "k-req" : "k-miss"}">${esc(a.status)}</span> <b>${esc(a.name)}</b> <span class="sub">${esc(a.id)} · ${esc(a.role)}${self ? " · 나" : ""}</span></div>
+      <div class="sub">가입 ${esc(a.at)}${a.last ? " · 마지막 로그인 " + esc(a.last) : ""}</div>
+      ${self ? "" : `<div class="acts">${a.status !== "승인" ? btn("승인", { status: "승인" }) : btn("사용 중지", { status: "중지" })}${a.status === "승인" ? (a.role === "관리자" ? btn("스태프로", { role: "스태프" }) : btn("관리자로", { role: "관리자" })) : ""}</div>`}
+    </div>`;
+  }).join("") || `<div class="sub">계정이 없어요.</div>`;
+}
+$("accs").addEventListener("click", e => {
+  const b = e.target.closest("[data-acc]"); if (!b) return;
+  const body = JSON.parse(b.dataset.body);
+  if (body.status === "중지" && !confirm("이 계정을 사용 중지할까요? 바로 로그아웃돼요.")) return;
+  b.disabled = true;
+  post(Object.assign({ action: "sinkAcct", id: b.dataset.acc }, body)).then(r => {
+    if (r.status === "unauth") return unauth();
+    if (r.status !== "ok") throw 0;
+    accs = r.accounts; renderAccs(); toast("바꿨어요");
+  }).catch(() => { b.disabled = false; toast("바꾸지 못했어요. 다시 해 주세요."); });
+});
+
+/* ── 목록 ── */
+function refreshBrands() {
+  const bs = [...new Set(rows.map(r => r.brand))];
+  $("brandList").innerHTML = bs.map(b => `<option value="${esc(b)}">${esc(BRAND[b] || "")}</option>`).join("");
+  const cur = $("fb").value;
+  $("fb").innerHTML = `<option value="">모든 브랜드</option>` + bs.map(b => `<option value="${esc(b)}">${esc(BRAND[b] || b)}</option>`).join("");
+  $("fb").value = bs.includes(cur) ? cur : "";
+}
+function filtered() {
+  const q = norm($("fq").value), b = $("fb").value, s = $("fs").value;
+  return rows.filter(r => (!b || r.brand === b) && (s === "" || r.st === +s) && (!q || norm(r.model).includes(q) || norm(ko(r.brand)).includes(q)));
+}
+function rowHtml(r, i) {
+  return `<div class="row" data-i="${i}">
+    <div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}</div></div>
+    <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
+    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) : ""}</span><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+  </div>`;
+}
+function renderList() {
+  const list = filtered();
+  const c = [0, 0, 0]; rows.forEach(r => c[r.st]++);
+  $("listMeta").textContent = `전체 ${rows.length}개 (가능 ${c[0]} · 확인 필요 ${c[1]} · 불가 ${c[2]}) · 보이는 것 ${list.length}개`;
+  $("rows").innerHTML = list.slice(0, shown).map(r => rowHtml(r, rows.indexOf(r))).join("") || `<div class="sub">맞는 세면대가 없어요.</div>`;
+  $("more").hidden = list.length <= shown;
+}
+["fq", "fb", "fs"].forEach(id => $(id).addEventListener("input", () => { shown = 60; renderList(); }));
+$("more").addEventListener("click", () => { shown += 60; renderList(); });
+
+$("rows").addEventListener("click", e => {
+  const rowEl = e.target.closest(".row"); if (!rowEl) return;
+  const r = rows[+rowEl.dataset.i]; if (!r) return;
+  const setBtn = e.target.closest("[data-set]");
+  if (setBtn) {                                   // 상태 바로 저장
+    const st = +setBtn.dataset.set; if (st === r.st) return;
+    const prev = r.st; r.st = st; rowEl.outerHTML = rowHtml(r, rows.indexOf(r));
+    const el = $("rows").querySelector(`[data-i="${rows.indexOf(r)}"]`); if (el) el.classList.add("saving");
+    post({ action: "sinkSave", brand: r.brand, model: r.model, st }).then(x => {
+      if (x.status === "unauth") return unauth();
+      if (x.status !== "ok") throw 0;
+      if (el) el.classList.remove("saving"); toast(r.model + " → " + ST[st]); renderList();
+    }).catch(() => { r.st = prev; renderList(); toast("저장하지 못했어요. 다시 눌러 주세요."); });
+    return;
+  }
+  if (e.target.closest("[data-edit]")) { editStart(r); return; }
+  if (e.target.closest("[data-del]")) {
+    if (!confirm(`${r.brand} ${r.model} 을(를) 목록에서 지울까요?\n고객 화면에서도 사라집니다.`)) return;
+    post({ action: "sinkDel", brand: r.brand, model: r.model }).then(x => {
+      if (x.status === "unauth") return unauth();
+      if (x.status !== "ok" && x.status !== "none") throw 0;
+      rows.splice(rows.indexOf(r), 1); refreshBrands(); renderList(); renderReqs(); toast("지웠어요");
+    }).catch(() => toast("지우지 못했어요. 다시 해 주세요."));
+  }
+});
+
+/* ── 등록·수정 ── */
+function setAddSt(s) { addSt = s; $("aSt").querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.st === s)); }
+$("aSt").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setAddSt(+b.dataset.st); });
+function editStart(r) {
+  editing = r; showTab("list");
+  $("addTitle").textContent = "세면대 수정"; $("aBtn").textContent = "저장"; $("aCancel").hidden = false;
+  $("aBrand").value = r.brand; $("aModel").value = r.model; $("aMemo").value = r.memo; setAddSt(r.st);
+  $("addMsg").textContent = ""; window.scrollTo({ top: 0, behavior: "smooth" }); $("aModel").focus();
+}
+function editEnd() {
+  editing = null; $("addTitle").textContent = "세면대 등록"; $("aBtn").textContent = "등록"; $("aCancel").hidden = true;
+  $("aModel").value = ""; $("aMemo").value = ""; setAddSt(1);
+}
+$("aCancel").addEventListener("click", editEnd);
+$("addForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const brand = $("aBrand").value.trim(), model = $("aModel").value.trim(), memo = $("aMemo").value.trim();
+  if (!brand || !model) return;
+  const k = key(brand, model), same = rows.find(r => key(r.brand, r.model) === k);
+  if (!editing && same && !confirm(`${same.brand} ${same.model} 은(는) 이미 있어요 (${ST[same.st]}).\n입력한 내용으로 바꿀까요?`)) return;
+  if (editing && same && same !== editing) { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있어요."; return; }
+  $("aBtn").disabled = true; $("addMsg").className = "msg"; $("addMsg").textContent = "저장 중…";
+  const body = { action: "sinkSave", brand, model, st: addSt, memo };
+  if (editing) body.old = { brand: editing.brand, model: editing.model };
+  post(body).then(x => {
+    if (x.status === "unauth") return unauth();
+    if (x.status === "dup") { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있어요."; return; }
+    if (x.status !== "ok") throw 0;
+    const target = editing || same;
+    if (target) Object.assign(target, { brand, model, st: addSt, memo }); else rows.unshift({ brand, model, st: addSt, memo });
+    $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤어요" : "등록했어요"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
+    editEnd(); refreshBrands(); renderList(); renderReqs();
+  }).catch(() => { $("addMsg").className = "msg err"; $("addMsg").textContent = "저장하지 못했어요. 다시 해 주세요."; })
+    .finally(() => { $("aBtn").disabled = false; });
+});
+
+/* ── 확인 요청 ── */
+function renderReqs() {
+  const k = $("rk").value, open = $("rd").value === "open";
+  const list = reqs.filter(r => (!k || r.kind === k) && (!open || !r.done));
+  const n = reqs.filter(r => r.kind === "확인 요청" && !r.done).length;
+  $("reqCount").textContent = n ? `(${n})` : "";
+  $("reqs").innerHTML = list.map(r => {
+    const hit = rows.find(x => norm(x.model) === norm(r.q));
+    return `<div class="req${r.done ? " done" : ""}" data-row="${r.row}">
+      <div><span class="badge ${r.kind === "확인 요청" ? "k-req" : "k-miss"}">${esc(r.kind)}</span> <b>${esc(r.q)}</b> ${r.brand ? `<span class="sub">${esc(BRAND[r.brand] || r.brand)}</span>` : ""}</div>
+      <div class="sub">${esc(r.at)}${r.phone ? " · 연락처 " + esc(r.phone) : ""}${r.note ? " · " + esc(r.note) : ""}${r.done ? " · 처리함 " + esc(r.doneAt) : ""}</div>
+      ${hit ? `<div class="sub">이미 등록됨: ${esc(hit.brand)} ${esc(hit.model)} (${ST[hit.st]})</div>` : ""}
+      <div class="acts">${hit ? "" : `<button type="button" data-reg>목록에 등록</button>`}<button type="button" data-done>${r.done ? "처리 취소" : "처리 완료"}</button></div>
+    </div>`;
+  }).join("") || `<div class="sub">${open ? "처리할 요청이 없어요." : "요청이 없어요."}</div>`;
+}
+["rk", "rd"].forEach(id => $(id).addEventListener("input", renderReqs));
+$("reqs").addEventListener("click", e => {
+  const el = e.target.closest(".req"); if (!el) return;
+  const r = reqs.find(x => x.row === +el.dataset.row); if (!r) return;
+  if (e.target.closest("[data-reg]")) {
+    editEnd(); showTab("list");
+    $("aBrand").value = r.brand && r.brand !== "기타" ? r.brand : ""; $("aModel").value = r.q; $("aMemo").value = "고객 요청 " + r.at.slice(5, 10);
+    window.scrollTo({ top: 0, behavior: "smooth" }); ($("aBrand").value ? $("aModel") : $("aBrand")).focus();
+    return;
+  }
+  if (e.target.closest("[data-done]")) {
+    const done = !r.done;
+    post({ action: "sinkReqDone", row: r.row, done }).then(x => {
+      if (x.status === "unauth") return unauth();
+      if (x.status !== "ok") throw 0;
+      r.done = done; r.doneAt = done ? "방금" : ""; renderReqs();
+    }).catch(() => toast("저장하지 못했어요. 다시 해 주세요."));
+  }
+});
+
+token = load(TK);
+if (token) start(); else showAuth("");
+</script>
+</body>
+</html>
