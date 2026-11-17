@@ -385,7 +385,8 @@ function dbFiltered() {
   const q = norm($("dq").value), reg = $("dReg").value, rv = $("dRv").value, b = $("dBrand").value, t = $("dType").value;
   return db.filter(x => {
     const isReg = dbReg(x);
-    if (reg === "no" && isReg) return false;
+    // 품번·브랜드를 검색할 때는 "미등록만"이어도 등록된 것까지 함께 보여 줌
+    if (reg === "no" && isReg && !q) return false;
     if (reg === "yes" && !isReg) return false;
     if (rv === "-" ? x[11] : rv && x[11] !== rv) return false;
     if (b && x[1] !== b) return false;
@@ -416,7 +417,7 @@ function dbRowHtml(x) {
 function renderDb() {
   if (!db) return;
   const list = dbFiltered(), noReg = db.filter(x => !dbReg(x)).length;
-  $("dbMeta").textContent = `전체 ${db.length}개 · 미등록 ${noReg}개 · 보이는 것 ${list.length}개`;
+  $("dbMeta").textContent = `전체 ${db.length}개 · 미등록 ${noReg}개 · 보이는 것 ${list.length}개` + ($("dq").value.trim() && $("dReg").value === "no" ? " (검색 중에는 등록된 것도 함께 보입니다)" : "");
   $("dbRows").innerHTML = list.slice(0, dbShown).map(dbRowHtml).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
   $("dbMore").hidden = list.length <= dbShown;
 }
