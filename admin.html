@@ -56,6 +56,12 @@
   .msg.err { color: var(--no); } .msg.ok { color: var(--ok); }
   .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #2b2420; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 9; }
   .more { width: 100%; margin-top: 8px; }
+  .dbf { grid-template-columns: 1fr 1fr 1fr; }
+  .dbf input { grid-column: 1 / -1; }
+  .k-reg { background: var(--ok-bg); color: var(--ok); }
+  .k-no { background: #f1ece6; color: #7a5a43; }
+  .rv button.on { background: var(--ink); color: #fff; font-weight: 700; }
+  .rv button { font-size: 12px; padding: 5px 9px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -99,6 +105,7 @@
     <div class="tabs" id="mainTabs">
       <button type="button" data-tab="list" aria-pressed="true">세면대 목록</button>
       <button type="button" data-tab="reqs" aria-pressed="false">확인 요청 <span id="reqCount"></span></button>
+      <button type="button" data-tab="db" aria-pressed="false">사이즈 DB</button>
       <button type="button" data-tab="brands" aria-pressed="false" hidden id="brandTabBtn">브랜드</button>
       <button type="button" data-tab="accs" aria-pressed="false" hidden id="accTabBtn">계정 <span id="accCount"></span></button>
     </div>
@@ -144,6 +151,23 @@
         </div>
         <div class="meta">고객이 남긴 연락처는 결과를 알려드린 뒤 [삭제]로 지워 주세요.</div>
         <div id="reqs"></div>
+      </div>
+    </section>
+
+    <!-- 사이즈 DB 탭: 시트 "세면대 사이즈 DB" (고객 화면에는 안 나옴) -->
+    <section id="tab-db" hidden>
+      <div class="card">
+        <div class="filters dbf">
+          <input id="dq" type="search" placeholder="품번·브랜드 찾기">
+          <select id="dReg"><option value="no">미등록만</option><option value="yes">등록된 것만</option><option value="">전체</option></select>
+          <select id="dRv"><option value="">검토 전체</option><option value="-">아직 안 봄</option><option value="보류">보류</option><option value="제외">제외</option></select>
+          <select id="dBrand"><option value="">모든 브랜드</option></select>
+          <select id="dType"><option value="">모든 유형</option></select>
+        </div>
+        <div class="meta" id="dbMeta">불러오는 중…</div>
+        <div id="dbRows"></div>
+        <button class="more" id="dbMore" hidden>더 보기</button>
+        <div class="meta" style="margin-top:12px">치수를 고치거나 새 세면대를 넣을 때는 시트 "세면대 사이즈 DB" 탭에서 해 주세요. 고객 검색에는 나오지 않아요.</div>
       </div>
     </section>
 
@@ -270,9 +294,89 @@ function start() {
 $("mainTabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   [...$("mainTabs").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-  ["list", "reqs", "brands", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
+  ["list", "reqs", "db", "brands", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
+  if (b.dataset.tab === "db") loadDb();
 });
 function showTab(t) { $("mainTabs").querySelector(`[data-tab="${t}"]`).click(); }
+
+/* ── 사이즈 DB ── 등록 여부는 세면대 목록(rows)과 품번을 맞춰서 바로 계산 */
+let db = null, dbShown = 60, dbBusy = false;
+const dbKeys = m => { const k = [norm(m)]; String(m).split(/[\s()\/+]+/).forEach(t => { t = norm(t); if (t.length >= 4 && /[A-Z]/.test(t) && /\d/.test(t) && !k.includes(t)) k.push(t); }); return k; };
+function dbReg(x) { const set = new Set(rows.map(r => norm(r.model))); return dbKeys(x[2]).some(k => set.has(k)); }
+function loadDb(force) {
+  if ((db && !force) || dbBusy) return renderDb();
+  dbBusy = true; $("dbMeta").textContent = "불러오는 중…";
+  post({ action: "sinkSizeList" }).then(x => {
+    if (x.status === "unauth") return unauth();
+    if (x.status !== "ok") throw 0;
+    db = x.rows || [];
+    const opt = (id, first, vals) => { $(id).innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join(""); };
+    const cnt = k => { const c = {}; db.forEach(r => { const v = k(r); if (v) c[v] = (c[v] || 0) + 1; }); return Object.keys(c).sort((a, b) => c[b] - c[a]); };
+    opt("dBrand", "모든 브랜드", cnt(r => r[1]));
+    opt("dType", "모든 유형", cnt(r => String(r[3]).split(/[(/]/)[0].trim()));
+    renderDb();
+  }).catch(() => { $("dbMeta").textContent = "불러오지 못했어요. 탭을 다시 눌러 주세요."; }).finally(() => { dbBusy = false; });
+}
+function dbFiltered() {
+  const q = norm($("dq").value), reg = $("dReg").value, rv = $("dRv").value, b = $("dBrand").value, t = $("dType").value;
+  return db.filter(x => {
+    const isReg = dbReg(x);
+    if (reg === "no" && isReg) return false;
+    if (reg === "yes" && !isReg) return false;
+    if (rv === "-" ? x[11] : rv && x[11] !== rv) return false;
+    if (b && x[1] !== b) return false;
+    if (t && String(x[3]).split(/[(/]/)[0].trim() !== t) return false;
+    return !q || norm(x[2]).includes(q) || norm(x[1]).includes(q);
+  });
+}
+function dbRowHtml(x) {
+  const isReg = dbReg(x), mm = v => v ? esc(v) : "-";
+  return `<div class="req" data-dr="${x[0]}">
+    <div><span class="badge ${isReg ? "k-reg" : "k-no"}">${isReg ? "등록됨" : "미등록"}</span> <b>${esc(x[2])}</b> <span class="sub">${esc(x[1])} · ${esc(x[3] || "유형 -")}</span></div>
+    <div class="sub">가로 ${mm(x[4])} · 깊이 ${mm(x[5])} · 높이 ${mm(x[6])} · 림두께 ${mm(x[8])}${x[7] ? " · 볼 " + esc(x[7]) : ""}${x[9] ? " · 수전홀 " + esc(x[9]) : ""}${x[10] ? "<br>" + esc(x[10]) : ""}</div>
+    <div class="acts">${isReg ? "" : `<button type="button" data-dreg>등록하기</button><span class="seg rv">${["보류", "제외"].map(v => `<button type="button" data-rv="${v}" class="${x[11] === v ? "on" : ""}">${v}</button>`).join("")}</span>`}</div>
+  </div>`;
+}
+function renderDb() {
+  if (!db) return;
+  const list = dbFiltered(), noReg = db.filter(x => !dbReg(x)).length;
+  $("dbMeta").textContent = `전체 ${db.length}개 · 미등록 ${noReg}개 · 보이는 것 ${list.length}개`;
+  $("dbRows").innerHTML = list.slice(0, dbShown).map(dbRowHtml).join("") || `<div class="sub">맞는 세면대가 없어요.</div>`;
+  $("dbMore").hidden = list.length <= dbShown;
+}
+["dq", "dReg", "dRv", "dBrand", "dType"].forEach(id => $(id).addEventListener("input", () => { dbShown = 60; renderDb(); }));
+$("dbMore").addEventListener("click", () => { dbShown += 60; renderDb(); });
+// 사이즈 DB 브랜드 이름(예: "계림요업(계림바스 KERIM)") → 등록된 브랜드
+function dbBrand(name) {
+  const n = norm(name);
+  const hit = brands.find(b => (b.ko && n.includes(norm(b.ko))) || n.includes(norm(b.brand)));
+  return hit ? hit.brand : "";
+}
+$("dbRows").addEventListener("click", e => {
+  const el = e.target.closest("[data-dr]"); if (!el) return;
+  const x = db.find(r => r[0] === +el.dataset.dr); if (!x) return;
+  if (e.target.closest("[data-dreg]")) {
+    editEnd(); showTab("list");
+    const b = dbBrand(x[1]); $("aBrand").value = b;
+    $("aModel").value = x[2]; setAddSt(1);
+    $("aMemo").value = ["사이즈 DB", x[3], [x[4], x[5], x[6]].some(Boolean) ? `${x[4] || "-"}×${x[5] || "-"}×${x[6] || "-"}mm` : "", x[8] ? "림 " + x[8] : ""].filter(Boolean).join(" · ").slice(0, 300);
+    $("addMsg").className = b ? "msg" : "msg err";
+    $("addMsg").textContent = b ? "상태를 고르고 [등록]을 눌러 주세요." : `"${x[1]}"는 등록된 브랜드가 아니에요. 브랜드를 먼저 고르거나 추가해 주세요.`;
+    sizePreview(); window.scrollTo({ top: 0, behavior: "smooth" }); (b ? $("aModel") : $("aBrand")).focus();
+    return;
+  }
+  const rb = e.target.closest("[data-rv]");
+  if (rb) {
+    const v = x[11] === rb.dataset.rv ? "" : rb.dataset.rv, prev = x[11];
+    x[11] = v; renderDb();
+    post({ action: "sinkSizeReview", row: x[0], model: x[2], review: v }).then(r => {
+      if (r.status === "unauth") return unauth();
+      if (r.status === "moved") { toast("시트 줄이 바뀌었어요. 다시 불러올게요."); loadDb(true); return; }
+      if (r.status !== "ok") throw 0;
+      toast(x[2] + (v ? " → " + v : " 검토 표시 지움"));
+    }).catch(() => { x[11] = prev; renderDb(); toast("저장하지 못했어요. 다시 눌러 주세요."); });
+  }
+});
 
 /* ── 브랜드 (관리자) ── */
 let bEditing = null;
