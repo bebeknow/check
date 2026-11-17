@@ -66,6 +66,11 @@
   .prod .t { font-size: 15px; font-weight: 800; }
   .prod .go { margin-left: auto; flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--brand); white-space: nowrap; }
   .buy { display: flex; align-items: center; justify-content: center; margin-top: 10px; width: 100%; padding: 12px; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 700; font-size: 15px; text-decoration: none; }
+  .measure { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff; margin: 4px 0 10px; }
+  .abc { list-style: none; padding: 0 !important; display: grid; gap: 8px; }
+  .abc li { display: flex; gap: 10px; align-items: flex-start; margin: 0 !important; }
+  .abc .k { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: #cf8a76; color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+  .abc small { display: block; font-size: 12.5px; color: var(--ink2); }
   footer { text-align: center; font-size: 12px; color: var(--ink2); margin-top: 28px; }
 </style>
 </head>
@@ -95,10 +100,11 @@
 
   <section class="guide">
     <h2>목록에 없거나 품번을 모르시나요?</h2>
-    <ul>
-      <li>세면대 두께 <b>0~6cm</b> (6~7cm는 톡톡으로 문의해 주세요)</li>
-      <li>내부 각도 <b>90~140°</b></li>
-      <li>외측 높이 <b>9cm 이상</b></li>
+    <img class="measure" src="img/measure.jpg" alt="세면대 측정 위치: A 두께, B 내부 각도, C 외측 높이" width="648" height="414">
+    <ul class="abc">
+      <li><span class="k">A</span><div>세면대 두께 <b>0~6cm</b><small>6~7cm는 톡톡으로 문의해 주세요. 7cm가 넘으면 설치가 어려워요.</small></div></li>
+      <li><span class="k">B</span><div>내부 각도 <b>90~140°</b><small>세면대 안쪽 벽의 기울기예요.</small></div></li>
+      <li><span class="k">C</span><div>외측 높이 <b>9cm 이상</b><small>지지봉이 안정적으로 연결되는 높이예요.</small></div></li>
     </ul>
     <p>세면대 사진을 보내 주시면 설치 가능 여부를 바로 알려드려요.</p>
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
