@@ -16,7 +16,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const talkBtn = label => TALK_URL ? `<a class="talk" href="${TALK_URL}" target="_blank" rel="noopener">${label}</a>` : "";
 let brands = [], sentReq = {}, busy = false;
 
-if (TALK_URL) $("talkGuide").href = $("unknown").href = TALK_URL; else $("talkGuide").hidden = $("unknown").hidden = true;
+if (TALK_URL) $("talkGuide").href = TALK_URL; else $("talkGuide").hidden = true;
 if (BUY_URL) $("prod").href = BUY_URL; else $("prod").hidden = true;
 const buyBtn = () => BUY_URL ? `<a class="buy" href="${BUY_URL}" target="_blank" rel="noopener">베베노 아기비데 보러 가기</a>` : "";
 
