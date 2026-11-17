@@ -40,6 +40,7 @@
   .model { font-weight: 800; font-size: 16px; word-break: break-all; }
   .sub { font-size: 12px; color: var(--ink2); }
   .when { font-size: 12px; color: #9a8f86; }
+  .plink { font-size: 12px; color: var(--brand); }
   .memo { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink2); }
   .memo span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .memo button { padding: 4px 8px; font-size: 12px; }
@@ -587,7 +588,7 @@ function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
     <div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}</div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
-    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span></span><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>` : ""}</span><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
   </div>`;
 }
 function renderList() {
