@@ -33,11 +33,9 @@ get({ sink: "brands" }).then(j => { if (j && Array.isArray(j.brands)) brands = j
 
 function card([brandKo, model, st]) {
   const s = STATUS[st] || STATUS[1];
-  const img = "https://search.naver.com/search.naver?where=image&query=" + encodeURIComponent(brandKo + " 세면대 " + model);
   return `<article class="item ${s.cls}">
     <div class="row"><div><div class="model">${esc(model)}</div><div class="brand">${esc(brandKo)}</div></div><span class="badge">${s.badge}</span></div>
     ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
-    <div class="links"><a href="${img}" target="_blank" rel="noopener">사진으로 확인하기 ↗</a></div>
     ${st === 0 ? buyBtn() : ""}
     ${st ? talkBtn("톡톡으로 사진 보내기") : ""}
   </article>`;
