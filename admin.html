@@ -392,7 +392,8 @@ function dbRowHtml(x) {
   return `<div class="req" data-dr="${x[0]}">
     <div><span class="badge ${isReg ? "k-reg" : "k-no"}">${isReg ? "등록됨" : "미등록"}</span> <b>${esc(x[2])}</b> <span class="sub">${esc(x[1])} · ${esc(x[3] || "유형 -")}</span></div>
     <div class="sub">가로 ${mm(x[4])} · 깊이 ${mm(x[5])} · 높이 ${mm(x[6])} · 림두께 ${mm(x[8])}${x[7] ? " · 볼 " + esc(x[7]) : ""}${x[9] ? " · 수전홀 " + esc(x[9]) : ""}${x[10] ? "<br>" + esc(x[10]) : ""}</div>
-    <div class="acts">${dbSrc(x[12])}${isReg ? "" : `<button type="button" data-dreg>등록하기</button><span class="seg rv">${["보류", "제외"].map(v => `<button type="button" data-rv="${v}" class="${x[11] === v ? "on" : ""}">${v}</button>`).join("")}</span>`}</div>
+    <div class="acts">${/^https?:\/\//.test(x[13] || "") ? `<a href="${esc(x[13])}" target="_blank" rel="noopener noreferrer">제품 정보 ↗ (직접)</a>` : dbSrc(x[12])}<button type="button" data-dlink>링크</button>${isReg ? "" : `<button type="button" data-dreg>등록하기</button><span class="seg rv">${["보류", "제외"].map(v => `<button type="button" data-rv="${v}" class="${x[11] === v ? "on" : ""}">${v}</button>`).join("")}</span>`}</div>
+    <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 지움)" value="${esc(x[13] || "")}"><button type="button" data-dlsave>저장</button><button type="button" data-dlcancel>취소</button></div>
   </div>`;
 }
 function renderDb() {
@@ -439,6 +440,23 @@ $("dbRows").addEventListener("click", e => {
       $("dbAddBrand").onclick = () => dbAddBrand(x[1]);
     } else $("addMsg").textContent = `"${x[1]}"는 등록된 브랜드가 아닙니다. 관리자에게 브랜드 추가를 요청해 주세요.`;
     sizePreview(); window.scrollTo({ top: 0, behavior: "smooth" }); (b ? $("aModel") : $("aBrand")).focus();
+    return;
+  }
+  const lbox = el.querySelector(".ilink");
+  if (e.target.closest("[data-dlink]")) { lbox.hidden = !lbox.hidden; if (!lbox.hidden) { const i = lbox.querySelector("input"); i.focus(); i.select(); } return; }
+  if (e.target.closest("[data-dlcancel]")) { lbox.querySelector("input").value = x[13] || ""; lbox.hidden = true; return; }
+  if (e.target.closest("[data-dlsave]")) {
+    const link = lbox.querySelector("input").value.trim();
+    if (link && !/^https?:\/\/\S+$/i.test(link)) { toast("https:// 로 시작하는 주소로 넣어 주세요."); return; }
+    el.classList.add("saving");
+    post({ action: "sinkSizeLink", row: x[0], model: x[2], link }).then(r => {
+      if (r.status === "unauth") return unauth();
+      if (r.status === "moved") { toast("시트 줄이 바뀌었습니다. 다시 불러오겠습니다."); loadDb(true); return; }
+      if (r.status === "badlink") { el.classList.remove("saving"); toast("주소를 다시 확인해 주세요."); return; }
+      if (r.status !== "ok") throw 0;
+      x[13] = link; el.outerHTML = dbRowHtml(x);
+      toast(x[2] + (link ? " 링크 저장" : " 직접 링크 지움") + (dbReg(x) ? " — 고객 화면은 최대 5분 뒤 반영" : " — 세면대 목록에 등록하면 고객 검색에 나옵니다"));
+    }).catch(() => { el.classList.remove("saving"); toast("저장하지 못했습니다. 다시 해 주세요."); });
     return;
   }
   const rb = e.target.closest("[data-rv]");
