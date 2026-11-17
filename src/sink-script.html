@@ -6,9 +6,9 @@ const TALK_URL = "https://talk.naver.com/W46FM2";
 const BUY_URL = "https://brand.naver.com/bebeknow";   // 아기비데 상품 주소가 정해지면 바꾸기
 const MIN = 4;
 const STATUS = [
-  { cls: "ok", badge: "설치할 수 있어요", msg: "" },
-  { cls: "chk", badge: "확인이 필요해요", msg: "세면대 모양이나 두께에 따라 설치가 안 될 수 있어요. 아래 네이버 톡톡으로 세면대 사진을 보내 주시면 바로 알려드릴게요." },
-  { cls: "no", badge: "설치가 어려워요", msg: "이 세면대에는 설치가 어려워요. 다른 세면대에서 쓰실 수 있는지 궁금하시면 아래 네이버 톡톡으로 물어봐 주세요." }
+  { cls: "ok", badge: "설치 가능합니다", msg: "" },
+  { cls: "chk", badge: "확인이 필요합니다", msg: "세면대 모양이나 두께에 따라 설치가 안 될 수 있습니다. 아래 네이버 톡톡으로 세면대 사진을 보내 주시면 바로 알려드리겠습니다." },
+  { cls: "no", badge: "설치가 어렵습니다", msg: "이 세면대에는 설치가 어렵습니다. 다른 세면대에서 쓰실 수 있는지 궁금하시면 아래 네이버 톡톡으로 물어봐 주세요." }
 ];
 const norm = s => String(s).toUpperCase().replace(/[^0-9A-Z가-힣]/g, "");
 const $ = id => document.getElementById(id);
@@ -42,8 +42,8 @@ function card([brandKo, model, st]) {
 /* 등록 안 된 품번: 확인 요청 양식 */
 function reqForm(raw) {
   const done = sentReq[norm(raw)];
-  if (done) return `<div class="empty"><b>확인 요청을 받았어요</b>확인되는 대로 목록에 올려 드릴게요.${done === 2 ? "<br>남겨 주신 연락처로 결과를 알려드릴게요." : ""}<br>더 빨리 알고 싶으시면 아래 네이버 톡톡으로 사진을 보내 주세요.</div>`;
-  const opts = [`<option value="">모르겠어요</option>`]
+  if (done) return `<div class="empty"><b>확인 요청이 접수되었습니다.</b>확인되는 대로 목록에 올려 드리겠습니다.${done === 2 ? "<br>남겨 주신 연락처로 결과를 알려드리겠습니다." : ""}<br>더 빨리 알고 싶으시면 아래 네이버 톡톡으로 사진을 보내 주세요.</div>`;
+  const opts = [`<option value="">모름</option>`]
     .concat(brands.map(([b, k]) => `<option value="${esc(b)}">${esc(k || b)}</option>`), [`<option value="__self">직접 입력</option>`]).join("");
   return `<div class="empty"><b>등록되지 않은 세면대입니다.</b>품번을 남겨 주시면 확인 후 안내드리겠습니다.
     <form class="req" id="reqForm">
@@ -51,7 +51,7 @@ function reqForm(raw) {
       <label>브랜드<select id="rb">${opts}</select></label>
       <label id="rbxRow" hidden>브랜드 이름<input id="rbx" maxlength="30" placeholder="예: 로카, 이케아"></label>
       <label>연락처 (선택 · 결과를 문자로 받고 싶으시면)<input id="rp" type="tel" inputmode="tel" maxlength="13" placeholder="010-0000-0000"></label>
-      <label class="agree" id="agreeRow" hidden><input type="checkbox" id="ra"> 확인 결과 안내에만 쓰고, 안내 후 지우는 데 동의해요</label>
+      <label class="agree" id="agreeRow" hidden><input type="checkbox" id="ra"> 확인 결과 안내에만 쓰고, 안내 후 지우는 데 동의합니다</label>
       <button type="submit" id="rs">확인 요청 보내기</button>
       <p class="rmsg" id="rmsg"></p>
     </form></div>`;
@@ -70,7 +70,7 @@ function bindReq() {
     post({ action: "sinkReq", kind: "request", q, brand: $("rb").value === "__self" ? $("rbx").value.trim() : $("rb").value, phone }).then(r => {
       if (r && r.status === "ok") { sentReq[norm(q)] = phone ? 2 : 1; $("list").innerHTML = reqForm(q); }
       else { $("rs").disabled = false; $("rmsg").textContent = "잠시 후 다시 보내 주세요. 급하시면 아래 톡톡으로 물어봐 주세요."; }
-    }).catch(() => { $("rs").disabled = false; $("rmsg").textContent = "연결이 불안정해요. 잠시 후 다시 보내 주세요."; });
+    }).catch(() => { $("rs").disabled = false; $("rmsg").textContent = "연결이 불안정합니다. 잠시 후 다시 보내 주세요."; });
   });
 }
 
@@ -90,10 +90,10 @@ function search(raw) {
     if (j.status === "short") { $("list").innerHTML = `<div class="empty"><b>품번을 ${MIN}글자 이상 입력해 주세요</b></div>`; return; }
     const items = j.items || [];
     if (!items.length) { $("list").innerHTML = reqForm(raw); bindReq(); return; }
-    $("meta").textContent = j.more ? "비슷한 품번이 더 있어요. 품번을 끝까지 입력하면 정확하게 찾을 수 있어요." : "";
+    $("meta").textContent = j.more ? "비슷한 품번이 더 있습니다. 품번을 끝까지 입력하면 정확하게 찾을 수 있습니다." : "";
     $("list").innerHTML = items.map(card).join("");
   }).catch(() => {
-    $("list").innerHTML = `<div class="empty"><b>연결이 불안정해요</b>잠시 후 다시 검색해 주세요.</div>`;
+    $("list").innerHTML = `<div class="empty"><b>연결이 불안정합니다.</b>잠시 후 다시 검색해 주세요.</div>`;
   }).finally(() => { busy = false; $("go").disabled = false; });
 }
 $("sform").addEventListener("submit", e => { e.preventDefault(); $("q").blur(); search($("q").value); });
