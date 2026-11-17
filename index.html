@@ -116,7 +116,7 @@
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
   </section>
 
-  <footer hidden>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 · v2026.11.17-8</footer>
+  <footer hidden>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 · v2026.11.17-9</footer>
 </div>
 
 
@@ -167,11 +167,12 @@ function reqForm(raw) {
   const done = sentReq[norm(raw)];
   if (done) return `<div class="empty"><b>확인 요청을 받았어요</b>확인되는 대로 목록에 올려 드릴게요.${done === 2 ? "<br>남겨 주신 연락처로 결과를 알려드릴게요." : ""}<br>더 빨리 알고 싶으시면 톡톡으로 사진을 보내 주세요.${talkBtn("톡톡으로 사진 보내기")}</div>`;
   const opts = [`<option value="">모르겠어요</option>`]
-    .concat(brands.map(([b, k]) => `<option value="${esc(b)}">${esc(k || b)}</option>`), [`<option value="기타">기타 브랜드</option>`]).join("");
+    .concat(brands.map(([b, k]) => `<option value="${esc(b)}">${esc(k || b)}</option>`), [`<option value="__self">직접 입력</option>`]).join("");
   return `<div class="empty"><b>아직 등록되지 않은 세면대예요</b>품번을 남겨 주시면 저희가 확인해서 알려드릴게요.
     <form class="req" id="reqForm">
       <label>세면대 품번<input id="rq" maxlength="40" value="${esc(raw)}" required></label>
       <label>브랜드<select id="rb">${opts}</select></label>
+      <label id="rbxRow" hidden>브랜드 이름<input id="rbx" maxlength="30" placeholder="예: 로카, 이케아"></label>
       <label>연락처 (선택 · 결과를 문자로 받고 싶으시면)<input id="rp" type="tel" inputmode="tel" maxlength="13" placeholder="010-0000-0000"></label>
       <label class="agree" id="agreeRow" hidden><input type="checkbox" id="ra"> 확인 결과 안내에만 쓰고, 안내 후 지우는 데 동의해요</label>
       <button type="submit" id="rs">확인 요청 보내기</button>
@@ -182,6 +183,7 @@ function reqForm(raw) {
 function bindReq() {
   const f = $("reqForm"); if (!f) return;
   $("rp").addEventListener("input", () => { $("agreeRow").hidden = !$("rp").value.trim(); });
+  $("rb").addEventListener("change", () => { const self = $("rb").value === "__self"; $("rbxRow").hidden = !self; if (self) $("rbx").focus(); });
   f.addEventListener("submit", e => {
     e.preventDefault();
     const q = $("rq").value.trim(), phone = $("rp").value.replace(/\D/g, "");
@@ -189,7 +191,7 @@ function bindReq() {
     if (phone && (phone.length < 10 || phone.length > 11)) { $("rmsg").textContent = "연락처를 다시 확인해 주세요."; return; }
     if (phone && !$("ra").checked) { $("rmsg").textContent = "연락처를 남기시려면 동의에 체크해 주세요."; return; }
     $("rs").disabled = true; $("rmsg").textContent = "보내는 중…";
-    post({ action: "sinkReq", kind: "request", q, brand: $("rb").value, phone }).then(r => {
+    post({ action: "sinkReq", kind: "request", q, brand: $("rb").value === "__self" ? $("rbx").value.trim() : $("rb").value, phone }).then(r => {
       if (r && r.status === "ok") { sentReq[norm(q)] = phone ? 2 : 1; $("list").innerHTML = reqForm(q); }
       else { $("rs").disabled = false; $("rmsg").textContent = "잠시 후 다시 보내 주세요. 급하시면 톡톡으로 물어봐 주세요."; }
     }).catch(() => { $("rs").disabled = false; $("rmsg").textContent = "연결이 불안정해요. 잠시 후 다시 보내 주세요."; });
