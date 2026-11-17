@@ -70,6 +70,16 @@
   .rv button.on { background: var(--ink); color: #fff; font-weight: 700; }
   .rv button { font-size: 12px; padding: 5px 9px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
+  /* 휴대폰: 탭은 3칸씩 두 줄, 제목 줄은 위아래로, 목록 정렬 칸은 한 줄 전체 */
+  @media (max-width: 560px) {
+    .wrap { padding: 12px 12px 48px; }
+    h1 { flex-direction: column; align-items: flex-start; gap: 2px; }
+    h1 small { line-height: 1.6; }
+    #mainTabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    #mainTabs button { white-space: nowrap; padding: 9px 4px; font-size: 14px; }
+    .lf select:last-child { grid-column: 1 / -1; }
+    .row .seg button { padding: 7px 8px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
