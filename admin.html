@@ -69,6 +69,7 @@
   .k-no { background: #f1ece6; color: #7a5a43; }
   .rv button.on { background: var(--ink); color: #fff; font-weight: 700; }
   .rv button { font-size: 12px; padding: 5px 9px; }
+  .acts > a { align-self: center; font-size: 13px; color: var(--brand); margin-right: 4px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
   /* 휴대폰: 탭은 3칸씩 두 줄, 제목 줄은 위아래로, 목록 정렬 칸은 한 줄 전체 */
   @media (max-width: 560px) {
@@ -372,12 +373,20 @@ function dbFiltered() {
     return !q || norm(x[2]).includes(q) || norm(x[1]).includes(q);
   });
 }
+function dbSrc(src) {
+  src = String(src || "").trim(); if (!src) return "";
+  let u = (src.match(/https?:\/\/[^\s)]+/) || [])[0];
+  const toto = src.match(/kr\.toto\.com\s*pl_idx=(\d+)/);
+  if (!u && toto) u = "https://kr.toto.com/product/view.php?pl_idx=" + toto[1];
+  if (!u) { const d = src.match(/^([a-z0-9-]+\.)+(com|co\.kr|kr|net)\b/i); if (d) u = "https://" + d[0]; }
+  return u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">자료 보기 ↗</a>` : `<span class="sub">출처: ${esc(src)}</span>`;
+}
 function dbRowHtml(x) {
   const isReg = dbReg(x), mm = v => v ? esc(v) : "-";
   return `<div class="req" data-dr="${x[0]}">
     <div><span class="badge ${isReg ? "k-reg" : "k-no"}">${isReg ? "등록됨" : "미등록"}</span> <b>${esc(x[2])}</b> <span class="sub">${esc(x[1])} · ${esc(x[3] || "유형 -")}</span></div>
     <div class="sub">가로 ${mm(x[4])} · 깊이 ${mm(x[5])} · 높이 ${mm(x[6])} · 림두께 ${mm(x[8])}${x[7] ? " · 볼 " + esc(x[7]) : ""}${x[9] ? " · 수전홀 " + esc(x[9]) : ""}${x[10] ? "<br>" + esc(x[10]) : ""}</div>
-    <div class="acts">${isReg ? "" : `<button type="button" data-dreg>등록하기</button><span class="seg rv">${["보류", "제외"].map(v => `<button type="button" data-rv="${v}" class="${x[11] === v ? "on" : ""}">${v}</button>`).join("")}</span>`}</div>
+    <div class="acts">${dbSrc(x[12])}${isReg ? "" : `<button type="button" data-dreg>등록하기</button><span class="seg rv">${["보류", "제외"].map(v => `<button type="button" data-rv="${v}" class="${x[11] === v ? "on" : ""}">${v}</button>`).join("")}</span>`}</div>
   </div>`;
 }
 function renderDb() {
