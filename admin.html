@@ -32,6 +32,8 @@
   .seg button.on.s1 { background: var(--chk-bg); color: var(--chk); font-weight: 700; }
   .seg button.on.s2 { background: var(--no-bg); color: var(--no); font-weight: 700; }
   .filters { display: grid; grid-template-columns: 1fr 140px 120px; gap: 8px; margin-bottom: 8px; }
+  .lf { grid-template-columns: 1fr 1fr 1fr; }
+  .lf input { grid-column: 1 / -1; }
   .meta { font-size: 13px; color: var(--ink2); margin: 6px 2px 10px; }
   .row { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .row:first-child { border-top: 0; }
@@ -56,6 +58,11 @@
   .msg.err { color: var(--no); } .msg.ok { color: var(--ok); }
   .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #2b2420; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 9; }
   .more { width: 100%; margin-top: 8px; }
+  .lg { padding: 10px 0; border-top: 1px solid var(--line); display: grid; gap: 3px; font-size: 13px; }
+  .lg:first-child { border-top: 0; }
+  .lg .chg { color: var(--ink2); word-break: break-all; }
+  .lg .chg s { color: #a99; }
+  .k-act { background: #f1ece6; color: #7a5a43; }
   .dbf { grid-template-columns: 1fr 1fr 1fr; }
   .dbf input { grid-column: 1 / -1; }
   .k-reg { background: var(--ok-bg); color: var(--ok); }
@@ -83,12 +90,12 @@
     </form>
     <form class="card" id="signup" hidden>
       <label class="f">아이디 (영문 소문자·숫자·_ 3~20자)<input id="sid" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
-      <label class="f" style="margin-top:8px">이름 (수정한 사람으로 표시돼요)<input id="sname" maxlength="20" required></label>
+      <label class="f" style="margin-top:8px">이름 (수정한 사람으로 표시됩니다)<input id="sname" maxlength="20" required></label>
       <label class="f" style="margin-top:8px">비밀번호 (8자 이상)<input type="password" id="spw" autocomplete="new-password" required></label>
       <label class="f" style="margin-top:8px">비밀번호 다시<input type="password" id="spw2" autocomplete="new-password" required></label>
       <button class="primary" style="margin-top:12px;width:100%">계정 만들기</button>
       <p class="msg" id="signupMsg"></p>
-      <p class="sub" style="margin:4px 0 0">만든 계정은 관리자가 승인해야 로그인할 수 있어요.</p>
+      <p class="sub" style="margin:4px 0 0">만든 계정은 관리자가 승인해야 로그인할 수 있습니다.</p>
     </form>
   </div>
 
@@ -107,6 +114,7 @@
       <button type="button" data-tab="reqs" aria-pressed="false">확인 요청 <span id="reqCount"></span></button>
       <button type="button" data-tab="db" aria-pressed="false">사이즈 DB</button>
       <button type="button" data-tab="brands" aria-pressed="false" hidden id="brandTabBtn">브랜드</button>
+      <button type="button" data-tab="log" aria-pressed="false" hidden id="logTabBtn">기록</button>
       <button type="button" data-tab="accs" aria-pressed="false" hidden id="accTabBtn">계정 <span id="accCount"></span></button>
     </div>
 
@@ -131,10 +139,11 @@
       </form>
 
       <div class="card">
-        <div class="filters">
+        <div class="filters lf">
           <input id="fq" type="search" placeholder="품번·브랜드 찾기">
           <select id="fb"><option value="">모든 브랜드</option></select>
           <select id="fs"><option value="">모든 상태</option><option value="0">가능</option><option value="1">확인 필요</option><option value="2">불가</option></select>
+          <select id="fo"><option value="">기본 순서</option><option value="recent">최근 수정순</option></select>
         </div>
         <div class="meta" id="listMeta"></div>
         <div id="rows"></div>
@@ -167,7 +176,7 @@
         <div class="meta" id="dbMeta">불러오는 중…</div>
         <div id="dbRows"></div>
         <button class="more" id="dbMore" hidden>더 보기</button>
-        <div class="meta" style="margin-top:12px">치수를 고치거나 새 세면대를 넣을 때는 시트 "세면대 사이즈 DB" 탭에서 해 주세요. 고객 검색에는 나오지 않아요.</div>
+        <div class="meta" style="margin-top:12px">치수를 고치거나 새 세면대를 넣을 때는 시트 "세면대 사이즈 DB" 탭에서 해 주세요. 고객 검색에는 나오지 않습니다.</div>
       </div>
     </section>
 
@@ -184,15 +193,29 @@
         <p class="msg" id="bMsg"></p>
       </form>
       <div class="card">
-        <div class="meta">고객 화면 브랜드 버튼은 이 순서대로 보여요. 품번이 있는 브랜드는 지울 수 없어요.</div>
+        <div class="meta">고객 화면 브랜드 버튼은 이 순서대로 보입니다. 품번이 있는 브랜드는 지울 수 없습니다.</div>
         <div id="brands"></div>
       </div>
     </section>
 
     <!-- 계정 탭 (관리자만) -->
+    <!-- 변경 기록 탭 (관리자만): 시트 "변경 기록" 최근 500줄 -->
+    <section id="tab-log" hidden>
+      <div class="card">
+        <div class="filters" style="grid-template-columns:1fr 140px">
+          <input id="lq" type="search" placeholder="품번·사람·내용 찾기">
+          <select id="lk"><option value="">모든 구분</option><option>세면대</option><option>확인 요청</option><option>브랜드</option><option>계정</option><option>사이즈 DB</option></select>
+        </div>
+        <div class="meta" id="logMeta">불러오는 중…</div>
+        <div id="logRows"></div>
+        <button class="more" id="logMore" hidden>더 보기</button>
+        <div class="meta" style="margin-top:12px">관리자 화면에서 바꾼 것만 남습니다. 시트에서 직접 고친 내용은 남지 않습니다.</div>
+      </div>
+    </section>
+
     <section id="tab-accs" hidden>
       <div class="card">
-        <div class="meta">새로 만든 계정은 "대기"예요. 승인해야 로그인할 수 있어요. 관리자는 다른 계정을 승인·중지할 수 있어요.</div>
+        <div class="meta">새로 만든 계정은 "대기"입니다. 승인해야 로그인할 수 있습니다. 관리자는 다른 계정을 승인·중지할 수 있습니다.</div>
         <div id="accs"></div>
       </div>
     </section>
@@ -229,7 +252,7 @@ function showAuth(msg) {
   if (msg) say("loginMsg", msg, "err");
 }
 const unauth = () => showAuth("다시 로그인해 주세요.");
-const netErr = id => say(id, "연결이 안 돼요. 잠시 후 다시 해 주세요.", "err");
+const netErr = id => say(id, "연결이 되지 않습니다. 잠시 후 다시 해 주세요.", "err");
 
 /* ── 로그인 · 계정 만들기 ── */
 $("authTabs").addEventListener("click", e => {
@@ -242,8 +265,8 @@ $("login").addEventListener("submit", e => {
   say("loginMsg", "확인 중…");
   call(GAS_URL, { method: "POST", body: JSON.stringify({ action: "sinkLogin", id: $("lid").value.trim().toLowerCase(), pw: $("lpw").value }) }).then(r => {
     if (r.status === "ok" && r.token) { token = r.token; store(TK, token); $("lpw").value = ""; say("loginMsg", ""); start(); return; }
-    say("loginMsg", { wait: "아직 승인 전이에요. 관리자에게 승인을 요청해 주세요.", stopped: "사용이 중지된 계정이에요. 관리자에게 문의해 주세요.",
-      locked: "여러 번 틀려서 10분 동안 잠겼어요. 잠시 후 다시 해 주세요." }[r.status] || "아이디 또는 비밀번호가 맞지 않아요.", "err");
+    say("loginMsg", { wait: "아직 승인 전입니다. 관리자에게 승인을 요청해 주세요.", stopped: "사용이 중지된 계정입니다. 관리자에게 문의해 주세요.",
+      locked: "여러 번 틀려서 10분 동안 잠겼습니다. 잠시 후 다시 해 주세요." }[r.status] || "아이디 또는 비밀번호가 맞지 않습니다.", "err");
   }).catch(() => netErr("loginMsg"));
 });
 $("signup").addEventListener("submit", e => {
@@ -251,13 +274,13 @@ $("signup").addEventListener("submit", e => {
   const id = $("sid").value.trim().toLowerCase(), name = $("sname").value.trim(), pw = $("spw").value;
   if (!/^[a-z0-9_]{3,20}$/.test(id)) return say("signupMsg", "아이디는 영문 소문자·숫자·_ 3~20자로 만들어 주세요.", "err");
   if (pw.length < 8) return say("signupMsg", "비밀번호는 8자 이상으로 해 주세요.", "err");
-  if (pw !== $("spw2").value) return say("signupMsg", "비밀번호 두 개가 달라요.", "err");
+  if (pw !== $("spw2").value) return say("signupMsg", "비밀번호 두 개가 다릅니다.", "err");
   say("signupMsg", "만드는 중…");
   call(GAS_URL, { method: "POST", body: JSON.stringify({ action: "sinkSignup", id, name, pw }) }).then(r => {
     if (r.status === "ok") {
       $("signup").reset(); $("authTabs").children[0].click(); $("lid").value = id;
-      say("loginMsg", "계정을 만들었어요. 관리자가 승인하면 로그인할 수 있어요.", "ok");
-    } else say("signupMsg", r.status === "dup" ? "이미 있는 아이디예요." : r.status === "busy" ? "잠시 후 다시 해 주세요." : "입력한 내용을 다시 확인해 주세요.", "err");
+      say("loginMsg", "계정을 만들었습니다. 관리자가 승인하면 로그인할 수 있습니다.", "ok");
+    } else say("signupMsg", r.status === "dup" ? "이미 있는 아이디입니다." : r.status === "busy" ? "잠시 후 다시 해 주세요." : "입력한 내용을 다시 확인해 주세요.", "err");
   }).catch(() => netErr("signupMsg"));
 });
 $("logout").addEventListener("click", e => { e.preventDefault(); post({ action: "sinkLogout" }).catch(() => {}); showAuth(""); });
@@ -271,8 +294,8 @@ $("pwForm").addEventListener("submit", e => {
   say("pwMsg", "바꾸는 중…");
   post({ action: "sinkPw", old: $("pOld").value, pw: $("pNew").value }).then(r => {
     if (r.status === "unauth") return unauth();
-    if (r.status === "ok") { $("pwForm").reset(); say("pwMsg", "바꿨어요.", "ok"); setTimeout(() => $("pwForm").hidden = true, 1500); }
-    else say("pwMsg", r.status === "wrong" ? "지금 비밀번호가 맞지 않아요." : "다시 확인해 주세요.", "err");
+    if (r.status === "ok") { $("pwForm").reset(); say("pwMsg", "바꿨습니다.", "ok"); setTimeout(() => $("pwForm").hidden = true, 1500); }
+    else say("pwMsg", r.status === "wrong" ? "지금 비밀번호가 맞지 않습니다." : "다시 확인해 주세요.", "err");
   }).catch(() => netErr("pwMsg"));
 });
 
@@ -282,20 +305,21 @@ function start() {
   $("listMeta").textContent = "불러오는 중…";
   call(GAS_URL + "?sink=admin&token=" + encodeURIComponent(token)).then(r => {
     if (r.status === "unauth") return unauth();
-    if (r.status !== "ok") { $("listMeta").textContent = "불러오지 못했어요. 새로고침해 주세요."; return; }
+    if (r.status !== "ok") { $("listMeta").textContent = "불러오지 못했습니다. 새로고침해 주세요."; return; }
     me = r.me; rows = r.rows; reqs = r.reqs; sizes = r.sizes || {}; accs = r.accounts || []; setBrands(r.brands);
     $("who").hidden = false; $("whoName").textContent = me.name + (me.role === "관리자" ? " (관리자)" : "");
-    $("accTabBtn").hidden = $("brandTabBtn").hidden = me.role !== "관리자";
+    $("accTabBtn").hidden = $("brandTabBtn").hidden = $("logTabBtn").hidden = me.role !== "관리자";
     refreshBrands(); renderList(); renderReqs(); renderAccs(); renderBrands();
-  }).catch(() => { $("listMeta").textContent = "연결이 안 돼요. 새로고침해 주세요."; });
+  }).catch(() => { $("listMeta").textContent = "연결이 되지 않습니다. 새로고침해 주세요."; });
 }
 
 /* ── 탭 ── */
 $("mainTabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   [...$("mainTabs").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-  ["list", "reqs", "db", "brands", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
+  ["list", "reqs", "db", "brands", "log", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
   if (b.dataset.tab === "db") loadDb();
+  if (b.dataset.tab === "log") loadLog();
 });
 function showTab(t) { $("mainTabs").querySelector(`[data-tab="${t}"]`).click(); }
 
@@ -315,7 +339,7 @@ function loadDb(force) {
     opt("dBrand", "모든 브랜드", cnt(r => r[1]));
     opt("dType", "모든 유형", cnt(r => String(r[3]).split(/[(/]/)[0].trim()));
     renderDb();
-  }).catch(() => { $("dbMeta").textContent = "불러오지 못했어요. 탭을 다시 눌러 주세요."; }).finally(() => { dbBusy = false; });
+  }).catch(() => { $("dbMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; }).finally(() => { dbBusy = false; });
 }
 function dbFiltered() {
   const q = norm($("dq").value), reg = $("dReg").value, rv = $("dRv").value, b = $("dBrand").value, t = $("dType").value;
@@ -341,7 +365,7 @@ function renderDb() {
   if (!db) return;
   const list = dbFiltered(), noReg = db.filter(x => !dbReg(x)).length;
   $("dbMeta").textContent = `전체 ${db.length}개 · 미등록 ${noReg}개 · 보이는 것 ${list.length}개`;
-  $("dbRows").innerHTML = list.slice(0, dbShown).map(dbRowHtml).join("") || `<div class="sub">맞는 세면대가 없어요.</div>`;
+  $("dbRows").innerHTML = list.slice(0, dbShown).map(dbRowHtml).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
   $("dbMore").hidden = list.length <= dbShown;
 }
 ["dq", "dReg", "dRv", "dBrand", "dType"].forEach(id => $(id).addEventListener("input", () => { dbShown = 60; renderDb(); }));
@@ -352,6 +376,20 @@ function dbBrand(name) {
   const hit = brands.find(b => (b.ko && n.includes(norm(b.ko))) || n.includes(norm(b.brand)));
   return hit ? hit.brand : "";
 }
+// "콜러(KOHLER)" → 영문 KOHLER · 한글 콜러,  "TOTO" → TOTO · TOTO
+let dbBrandBack = null;
+function dbAddBrand(name) {
+  name = String(name).trim();
+  let en = "", koName = name;
+  const m = name.match(/^([^(]+)\(([^)]+)\)/);
+  if (m) { koName = m[1].trim(); en = (m[2].split(/[·,]/).map(t => t.trim()).find(t => /^[A-Za-z0-9 &.\-]+$/.test(t)) || "").trim(); }
+  else if (/^[A-Za-z0-9 &.\-]+$/.test(name)) en = name;
+  brandEditEnd(); showTab("brands");
+  $("bCode").value = en; $("bKo").value = koName;
+  dbBrandBack = { model: $("aModel").value, memo: $("aMemo").value };
+  say("bMsg", "영문 이름을 확인하고 [추가]를 눌러 주세요. 추가하면 세면대 등록으로 돌아갑니다.", "");
+  window.scrollTo({ top: 0, behavior: "smooth" }); (en ? $("bKo") : $("bCode")).focus();
+}
 $("dbRows").addEventListener("click", e => {
   const el = e.target.closest("[data-dr]"); if (!el) return;
   const x = db.find(r => r[0] === +el.dataset.dr); if (!x) return;
@@ -361,7 +399,11 @@ $("dbRows").addEventListener("click", e => {
     $("aModel").value = x[2]; setAddSt(1);
     $("aMemo").value = ["사이즈 DB", x[3], [x[4], x[5], x[6]].some(Boolean) ? `${x[4] || "-"}×${x[5] || "-"}×${x[6] || "-"}mm` : "", x[8] ? "림 " + x[8] : ""].filter(Boolean).join(" · ").slice(0, 300);
     $("addMsg").className = b ? "msg" : "msg err";
-    $("addMsg").textContent = b ? "상태를 고르고 [등록]을 눌러 주세요." : `"${x[1]}"는 등록된 브랜드가 아니에요. 브랜드를 먼저 고르거나 추가해 주세요.`;
+    if (b) $("addMsg").textContent = "상태를 고르고 [등록]을 눌러 주세요.";
+    else if (me && me.role === "관리자") {
+      $("addMsg").innerHTML = `"${esc(x[1])}"는 등록된 브랜드가 아닙니다. <button type="button" id="dbAddBrand" style="padding:4px 10px;font-size:12px">이 브랜드 추가</button>`;
+      $("dbAddBrand").onclick = () => dbAddBrand(x[1]);
+    } else $("addMsg").textContent = `"${x[1]}"는 등록된 브랜드가 아닙니다. 관리자에게 브랜드 추가를 요청해 주세요.`;
     sizePreview(); window.scrollTo({ top: 0, behavior: "smooth" }); (b ? $("aModel") : $("aBrand")).focus();
     return;
   }
@@ -371,12 +413,37 @@ $("dbRows").addEventListener("click", e => {
     x[11] = v; renderDb();
     post({ action: "sinkSizeReview", row: x[0], model: x[2], review: v }).then(r => {
       if (r.status === "unauth") return unauth();
-      if (r.status === "moved") { toast("시트 줄이 바뀌었어요. 다시 불러올게요."); loadDb(true); return; }
+      if (r.status === "moved") { toast("시트 줄이 바뀌었습니다. 다시 불러오겠습니다."); loadDb(true); return; }
       if (r.status !== "ok") throw 0;
       toast(x[2] + (v ? " → " + v : " 검토 표시 지움"));
-    }).catch(() => { x[11] = prev; renderDb(); toast("저장하지 못했어요. 다시 눌러 주세요."); });
+    }).catch(() => { x[11] = prev; renderDb(); toast("저장하지 못했습니다. 다시 눌러 주세요."); });
   }
 });
+
+/* ── 변경 기록 (관리자) ── [일시, 누가, 구분, 동작, 대상, 바꾸기 전, 바꾼 뒤] */
+let logs = null, logShown = 80, logBusy = false;
+function loadLog() {
+  if (logBusy) return; logBusy = true; $("logMeta").textContent = "불러오는 중…";
+  post({ action: "sinkLogList" }).then(x => {
+    if (x.status === "unauth") return unauth();
+    if (x.status !== "ok") throw 0;
+    logs = x.rows || []; logShown = 80; renderLog();
+  }).catch(() => { $("logMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; }).finally(() => { logBusy = false; });
+}
+function renderLog() {
+  if (!logs) return;
+  const q = $("lq").value.trim().toLowerCase(), k = $("lk").value;
+  const list = logs.filter(l => (!k || l[2] === k) && (!q || l.join(" ").toLowerCase().includes(q)));
+  $("logMeta").textContent = `최근 ${logs.length}건 · 보이는 것 ${list.length}건`;
+  $("logRows").innerHTML = list.slice(0, logShown).map(l => `<div class="lg">
+      <div><span class="badge k-act">${esc(l[2])} ${esc(l[3])}</span> <b>${esc(l[4])}</b></div>
+      ${l[5] || l[6] ? `<div class="chg">${l[5] ? `<s>${esc(l[5])}</s>` : ""}${l[5] && l[6] ? " → " : ""}${l[6] ? esc(l[6]) : ""}</div>` : ""}
+      <div class="sub">${esc(l[0])} · ${esc(l[1] || "-")}</div>
+    </div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
+  $("logMore").hidden = list.length <= logShown;
+}
+["lq", "lk"].forEach(id => $(id).addEventListener("input", () => { logShown = 80; renderLog(); }));
+$("logMore").addEventListener("click", () => { logShown += 80; renderLog(); });
 
 /* ── 브랜드 (관리자) ── */
 let bEditing = null;
@@ -387,7 +454,7 @@ function renderBrands() {
       <div><b>${esc(b.ko || b.brand)}</b> <span class="sub">${esc(b.brand)} · 품번 ${cnt[b.brand] || 0}개</span></div>
       ${b.url ? `<div class="sub" style="word-break:break-all"><a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.url)}</a></div>` : ""}
       <div class="acts"><button type="button" data-bedit>수정</button>${cnt[b.brand] ? "" : `<button type="button" data-bdel>삭제</button>`}</div>
-    </div>`).join("") || `<div class="sub">브랜드가 없어요.</div>`;
+    </div>`).join("") || `<div class="sub">브랜드가 없습니다.</div>`;
 }
 function brandEditEnd() { bEditing = null; $("brandForm").reset(); $("bTitle").textContent = "브랜드 추가"; $("bBtn").textContent = "추가"; $("bCancel").hidden = true; }
 $("bCancel").addEventListener("click", brandEditEnd);
@@ -399,13 +466,13 @@ $("brands").addEventListener("click", e => {
     $("bCode").value = b.brand; $("bKo").value = b.ko; $("bUrl").value = b.url; say("bMsg", ""); window.scrollTo({ top: 0, behavior: "smooth" });
   }
   if (e.target.closest("[data-bdel]")) {
-    if (!confirm((b.ko || b.brand) + " 브랜드를 지울까요?")) return;
+    if (!confirm((b.ko || b.brand) + " 브랜드를 지우시겠습니까?")) return;
     post({ action: "sinkBrandDel", brand: b.brand }).then(x => {
       if (x.status === "unauth") return unauth();
-      if (x.status === "used") return toast("품번이 " + x.count + "개 있어서 지울 수 없어요");
+      if (x.status === "used") return toast("품번이 " + x.count + "개 있어서 지울 수 없습니다");
       if (x.status !== "ok") throw 0;
-      setBrands(x.brands); refreshBrands(); renderBrands(); toast("지웠어요");
-    }).catch(() => toast("지우지 못했어요. 다시 해 주세요."));
+      setBrands(x.brands); refreshBrands(); renderBrands(); toast("지웠습니다");
+    }).catch(() => toast("지우지 못했습니다. 다시 해 주세요."));
   }
 });
 $("brandForm").addEventListener("submit", e => {
@@ -413,22 +480,28 @@ $("brandForm").addEventListener("submit", e => {
   const brand = $("bCode").value.trim(), koName = $("bKo").value.trim(), url = $("bUrl").value.trim();
   if (!brand) return;
   const dup = brands.find(x => x.brand.toUpperCase() === brand.toUpperCase());
-  if (!bEditing && dup && !confirm((dup.ko || dup.brand) + " 은(는) 이미 있어요. 입력한 내용으로 고칠까요?")) return;
-  if (bEditing && bEditing.brand !== brand && !confirm("영문 이름을 " + bEditing.brand + " → " + brand + " 로 바꾸면 이 브랜드 품번 " + rows.filter(r => r.brand === bEditing.brand).length + "개도 같이 바뀌어요. 바꿀까요?")) return;
+  if (!bEditing && dup && !confirm((dup.ko || dup.brand) + " 은(는) 이미 있습니다. 입력한 내용으로 고치시겠습니까?")) return;
+  if (bEditing && bEditing.brand !== brand && !confirm("영문 이름을 " + bEditing.brand + " → " + brand + " 로 바꾸면 이 브랜드 품번 " + rows.filter(r => r.brand === bEditing.brand).length + "개도 같이 바뀝니다. 바꾸시겠습니까?")) return;
   $("bBtn").disabled = true; say("bMsg", "저장 중…");
   const body = { action: "sinkBrand", brand, ko: koName, url };
   if (bEditing) body.old = bEditing.brand;
   const was = bEditing;
   post(body).then(x => {
     if (x.status === "unauth") return unauth();
-    if (x.status === "dup") return say("bMsg", "같은 영문 이름의 브랜드가 이미 있어요.", "err");
-    if (x.status === "badurl") return say("bMsg", "링크는 https:// 로 시작해야 해요.", "err");
+    if (x.status === "dup") return say("bMsg", "같은 영문 이름의 브랜드가 이미 있습니다.", "err");
+    if (x.status === "badurl") return say("bMsg", "링크는 https:// 로 시작해야 합니다.", "err");
     if (x.status !== "ok") throw 0;
     if (was && was.brand !== brand) rows.forEach(r => { if (r.brand === was.brand) r.brand = brand; });
     const added = !was && !dup;
     setBrands(x.brands); brandEditEnd(); refreshBrands(); renderBrands(); renderList();
-    say("bMsg", (koName || brand) + (added ? " 추가했어요. 이제 세면대 등록에서 고를 수 있어요." : " 저장했어요."), "ok");
-  }).catch(() => say("bMsg", "저장하지 못했어요. 다시 해 주세요.", "err")).finally(() => { $("bBtn").disabled = false; });
+    say("bMsg", (koName || brand) + (added ? " 추가했습니다. 이제 세면대 등록에서 고를 수 있습니다." : " 저장했습니다."), "ok");
+    if (dbBrandBack) {                               // 사이즈 DB에서 왔으면 세면대 등록으로 돌아가기
+      const back = dbBrandBack; dbBrandBack = null;
+      showTab("list"); pickBrand(brand); $("aModel").value = back.model; $("aMemo").value = back.memo;
+      $("addMsg").className = "msg"; $("addMsg").textContent = (koName || brand) + " 브랜드를 추가했습니다. 상태를 고르고 [등록]을 눌러 주세요.";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }).catch(() => say("bMsg", "저장하지 못했습니다. 다시 해 주세요.", "err")).finally(() => { $("bBtn").disabled = false; });
 });
 
 /* ── 계정 (관리자) ── */
@@ -445,18 +518,18 @@ function renderAccs() {
       <div class="sub">가입 ${esc(a.at)}${a.last ? " · 마지막 로그인 " + esc(a.last) : ""}</div>
       ${self ? "" : `<div class="acts">${a.status !== "승인" ? btn("승인", { status: "승인" }) : btn("사용 중지", { status: "중지" })}${a.status === "승인" ? (a.role === "관리자" ? btn("스태프로", { role: "스태프" }) : btn("관리자로", { role: "관리자" })) : ""}</div>`}
     </div>`;
-  }).join("") || `<div class="sub">계정이 없어요.</div>`;
+  }).join("") || `<div class="sub">계정이 없습니다.</div>`;
 }
 $("accs").addEventListener("click", e => {
   const b = e.target.closest("[data-acc]"); if (!b) return;
   const body = JSON.parse(b.dataset.body);
-  if (body.status === "중지" && !confirm("이 계정을 사용 중지할까요? 바로 로그아웃돼요.")) return;
+  if (body.status === "중지" && !confirm("이 계정을 사용 중지하시겠습니까? 바로 로그아웃됩니다.")) return;
   b.disabled = true;
   post(Object.assign({ action: "sinkAcct", id: b.dataset.acc }, body)).then(r => {
     if (r.status === "unauth") return unauth();
     if (r.status !== "ok") throw 0;
-    accs = r.accounts; renderAccs(); toast("바꿨어요");
-  }).catch(() => { b.disabled = false; toast("바꾸지 못했어요. 다시 해 주세요."); });
+    accs = r.accounts; renderAccs(); toast("바꿨습니다");
+  }).catch(() => { b.disabled = false; toast("바꾸지 못했습니다. 다시 해 주세요."); });
 });
 
 /* ── 목록 ── */
@@ -472,7 +545,10 @@ function refreshBrands() {
 }
 function filtered() {
   const q = norm($("fq").value), b = $("fb").value, s = $("fs").value;
-  return rows.filter(r => (!b || r.brand === b) && (s === "" || r.st === +s) && (!q || norm(r.model).includes(q) || norm(ko(r.brand)).includes(q)));
+  const list = rows.filter(r => (!b || r.brand === b) && (s === "" || r.st === +s) && (!q || norm(r.model).includes(q) || norm(ko(r.brand)).includes(q)));
+  // 최근 수정순: "방금" 고친 것이 맨 위, 그다음 수정일시 늦은 순
+  if ($("fo").value === "recent") { const k = r => r.at === "방금" ? "9" : String(r.at || ""); return list.slice().sort((x, y) => k(y).localeCompare(k(x))); }
+  return list;
 }
 // 수정일시·수정자 (처음 넣은 자료는 수정자 없음)
 function whenTxt(r) {
@@ -490,10 +566,10 @@ function renderList() {
   const list = filtered();
   const c = [0, 0, 0]; rows.forEach(r => c[r.st]++);
   $("listMeta").textContent = `전체 ${rows.length}개 (가능 ${c[0]} · 확인 필요 ${c[1]} · 불가 ${c[2]}) · 보이는 것 ${list.length}개`;
-  $("rows").innerHTML = list.slice(0, shown).map(r => rowHtml(r, rows.indexOf(r))).join("") || `<div class="sub">맞는 세면대가 없어요.</div>`;
+  $("rows").innerHTML = list.slice(0, shown).map(r => rowHtml(r, rows.indexOf(r))).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
   $("more").hidden = list.length <= shown;
 }
-["fq", "fb", "fs"].forEach(id => $(id).addEventListener("input", () => { shown = 60; renderList(); }));
+["fq", "fb", "fs", "fo"].forEach(id => $(id).addEventListener("input", () => { shown = 60; renderList(); }));
 $("more").addEventListener("click", () => { shown += 60; renderList(); });
 
 $("rows").addEventListener("click", e => {
@@ -508,17 +584,17 @@ $("rows").addEventListener("click", e => {
       if (x.status === "unauth") return unauth();
       if (x.status !== "ok") throw 0;
       r.at = "방금"; r.by = me ? me.name : ""; if (el) el.classList.remove("saving"); toast(r.model + " → " + ST[st]); renderList();
-    }).catch(() => { r.st = prev; renderList(); toast("저장하지 못했어요. 다시 눌러 주세요."); });
+    }).catch(() => { r.st = prev; renderList(); toast("저장하지 못했습니다. 다시 눌러 주세요."); });
     return;
   }
   if (e.target.closest("[data-edit]")) { editStart(r); return; }
   if (e.target.closest("[data-del]")) {
-    if (!confirm(`${r.brand} ${r.model} 을(를) 목록에서 지울까요?\n고객 화면에서도 사라집니다.`)) return;
+    if (!confirm(`${r.brand} ${r.model} 을(를) 목록에서 지우시겠습니까?\n고객 화면에서도 사라집니다.`)) return;
     post({ action: "sinkDel", brand: r.brand, model: r.model }).then(x => {
       if (x.status === "unauth") return unauth();
       if (x.status !== "ok" && x.status !== "none") throw 0;
-      rows.splice(rows.indexOf(r), 1); refreshBrands(); renderList(); renderReqs(); toast("지웠어요");
-    }).catch(() => toast("지우지 못했어요. 다시 해 주세요."));
+      rows.splice(rows.indexOf(r), 1); refreshBrands(); renderList(); renderReqs(); toast("지웠습니다");
+    }).catch(() => toast("지우지 못했습니다. 다시 해 주세요."));
   }
 });
 
@@ -543,22 +619,22 @@ $("addForm").addEventListener("submit", e => {
   const brand = $("aBrand").value.trim(), model = $("aModel").value.trim(), memo = $("aMemo").value.trim();
   if (!brand || !model) return;
   const k = key(brand, model), same = rows.find(r => key(r.brand, r.model) === k);
-  if (!editing && same && !confirm(`${same.brand} ${same.model} 은(는) 이미 있어요 (${ST[same.st]}).\n입력한 내용으로 바꿀까요?`)) return;
-  if (editing && same && same !== editing) { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있어요."; return; }
+  if (!editing && same && !confirm(`${same.brand} ${same.model} 은(는) 이미 있습니다 (${ST[same.st]}).\n입력한 내용으로 바꾸시겠습니까?`)) return;
+  if (editing && same && same !== editing) { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있습니다."; return; }
   $("aBtn").disabled = true; $("addMsg").className = "msg"; $("addMsg").textContent = "저장 중…";
   const body = { action: "sinkSave", brand, model, st: addSt, memo };
   if (editing) body.old = { brand: editing.brand, model: editing.model };
   post(body).then(x => {
     if (x.status === "unauth") return unauth();
-    if (x.status === "dup") { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있어요."; return; }
-    if (x.status === "nobrand") { $("addMsg").className = "msg err"; $("addMsg").textContent = "등록되지 않은 브랜드예요. 관리자가 [브랜드] 탭에서 먼저 추가해 주세요."; return; }
+    if (x.status === "dup") { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있습니다."; return; }
+    if (x.status === "nobrand") { $("addMsg").className = "msg err"; $("addMsg").textContent = "등록되지 않은 브랜드입니다. 관리자가 [브랜드] 탭에서 먼저 추가해 주세요."; return; }
     if (x.status !== "ok") throw 0;
     const target = editing || same;
     const stamp = { at: "방금", by: me ? me.name : "" };
     if (target) Object.assign(target, { brand, model, st: addSt, memo }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo }, stamp));
-    $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤어요" : "등록했어요"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
+    $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
     editEnd(); refreshBrands(); renderList(); renderReqs();
-  }).catch(() => { $("addMsg").className = "msg err"; $("addMsg").textContent = "저장하지 못했어요. 다시 해 주세요."; })
+  }).catch(() => { $("addMsg").className = "msg err"; $("addMsg").textContent = "저장하지 못했습니다. 다시 해 주세요."; })
     .finally(() => { $("aBtn").disabled = false; });
 });
 
@@ -581,7 +657,7 @@ $("aModel").addEventListener("input", sizePreview);
 /* ── 확인 요청 ── */
 // 사이즈 DB(시트 "세면대 사이즈 DB")에서 요청 품번과 맞는 줄. mm 값, 빈칸은 자료 없음
 function sizeBox(q, s0) {
-  const s = s0 !== undefined ? s0 : sizes[norm(q)]; if (!s) return `<div class="size nz">사이즈 DB에 없는 품번이에요</div>`;
+  const s = s0 !== undefined ? s0 : sizes[norm(q)]; if (!s) return `<div class="size nz">사이즈 DB에 없는 품번입니다</div>`;
   const mm = v => v ? esc(v) : "-";
   return `<div class="size"><b>사이즈 DB (mm)${s.exact ? "" : " · 비슷한 품번"}</b>` + s.rows.map(x =>
     `<div>${esc(x[0])} <b>${esc(x[1])}</b> · ${esc(x[2] || "유형 -")}<br>가로 ${mm(x[3])} · 깊이 ${mm(x[4])} · 높이 ${mm(x[5])} · 림두께 ${mm(x[7])}${x[6] ? " · 볼 " + esc(x[6]) : ""}${x[8] ? " · 수전홀 " + esc(x[8]) : ""}${x[9] ? "<br>" + esc(x[9]) : ""}</div>`).join("") + `</div>`;
@@ -600,7 +676,7 @@ function renderReqs() {
       ${hit ? `<div class="sub">이미 등록됨: ${esc(hit.brand)} ${esc(hit.model)} (${ST[hit.st]})</div>` : ""}
       <div class="acts">${hit ? "" : `<button type="button" data-reg>목록에 등록</button>`}<button type="button" data-done>${r.done ? "처리 취소" : "처리 완료"}</button><button type="button" data-rdel>삭제</button></div>
     </div>`;
-  }).join("") || `<div class="sub">${open ? "처리할 요청이 없어요." : "요청이 없어요."}</div>`;
+  }).join("") || `<div class="sub">${open ? "처리할 요청이 없습니다." : "요청이 없습니다."}</div>`;
 }
 ["rk", "rd"].forEach(id => $(id).addEventListener("input", renderReqs));
 $("reqs").addEventListener("click", e => {
@@ -613,13 +689,13 @@ $("reqs").addEventListener("click", e => {
     return;
   }
   if (e.target.closest("[data-rdel]")) {
-    if (!confirm(r.q + " 요청을 지울까요? 되돌릴 수 없어요.")) return;
+    if (!confirm(r.q + " 요청을 지우시겠습니까? 되돌릴 수 없습니다.")) return;
     post({ action: "sinkReqDel", row: r.row, q: r.q }).then(x => {
       if (x.status === "unauth") return unauth();
-      if (x.status === "moved") { toast("목록이 바뀌었어요. 새로고침한 뒤 다시 지워 주세요."); return; }
+      if (x.status === "moved") { toast("목록이 바뀌었습니다. 새로고침한 뒤 다시 지워 주세요."); return; }
       if (x.status !== "ok") throw 0;
-      reqs = x.reqs || reqs.filter(y => y !== r); renderReqs(); toast(r.q + " 요청을 지웠어요");
-    }).catch(() => toast("지우지 못했어요. 다시 해 주세요."));
+      reqs = x.reqs || reqs.filter(y => y !== r); renderReqs(); toast(r.q + " 요청을 지웠습니다");
+    }).catch(() => toast("지우지 못했습니다. 다시 해 주세요."));
     return;
   }
   if (e.target.closest("[data-done]")) {
@@ -628,7 +704,7 @@ $("reqs").addEventListener("click", e => {
       if (x.status === "unauth") return unauth();
       if (x.status !== "ok") throw 0;
       r.done = done; r.doneAt = done ? "방금" : ""; renderReqs();
-    }).catch(() => toast("저장하지 못했어요. 다시 해 주세요."));
+    }).catch(() => toast("저장하지 못했습니다. 다시 해 주세요."));
   }
 });
 
