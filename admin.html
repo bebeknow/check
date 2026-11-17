@@ -37,6 +37,7 @@
   .row:first-child { border-top: 0; }
   .model { font-weight: 800; font-size: 16px; word-break: break-all; }
   .sub { font-size: 12px; color: var(--ink2); }
+  .when { font-size: 12px; color: #9a8f86; }
   .memo { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink2); }
   .memo span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .memo button { padding: 4px 8px; font-size: 12px; }
@@ -110,6 +111,7 @@
           <label class="f">브랜드<select id="aBrand" required></select></label>
           <label class="f">품번<input id="aModel" required placeholder="예: CL-831"></label>
         </div>
+        <div id="aSize" style="margin-top:8px" hidden></div>
         <div style="margin:10px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <span class="sub">설치 가능 여부</span>
           <div class="seg" id="aSt">
@@ -137,7 +139,7 @@
     <section id="tab-reqs" hidden>
       <div class="card">
         <div class="filters" style="grid-template-columns:1fr 1fr">
-          <select id="rk"><option value="확인 요청">고객 확인 요청</option><option value="검색 실패">검색했는데 없던 품번</option><option value="">전체</option></select>
+          <select id="rk"><option value="">전체</option><option value="확인 요청">고객 확인 요청</option><option value="검색 실패">검색했는데 없던 품번</option></select>
           <select id="rd"><option value="open">처리 안 한 것</option><option value="">처리한 것도 보기</option></select>
         </div>
         <div class="meta">고객이 남긴 연락처는 결과를 알려드린 뒤 [삭제]로 지워 주세요.</div>
@@ -368,11 +370,16 @@ function filtered() {
   const q = norm($("fq").value), b = $("fb").value, s = $("fs").value;
   return rows.filter(r => (!b || r.brand === b) && (s === "" || r.st === +s) && (!q || norm(r.model).includes(q) || norm(ko(r.brand)).includes(q)));
 }
+// 수정일시·수정자 (처음 넣은 자료는 수정자 없음)
+function whenTxt(r) {
+  const at = String(r.at || "").replace(/^\d{4}-/, "").replace("-", "/");
+  return at ? "수정 " + esc(at) + " · " + esc(r.by || "처음 자료") : "";
+}
 function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
     <div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}</div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
-    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) : ""}</span><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span></span><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
   </div>`;
 }
 function renderList() {
@@ -396,7 +403,7 @@ $("rows").addEventListener("click", e => {
     post({ action: "sinkSave", brand: r.brand, model: r.model, st }).then(x => {
       if (x.status === "unauth") return unauth();
       if (x.status !== "ok") throw 0;
-      if (el) el.classList.remove("saving"); toast(r.model + " → " + ST[st]); renderList();
+      r.at = "방금"; r.by = me ? me.name : ""; if (el) el.classList.remove("saving"); toast(r.model + " → " + ST[st]); renderList();
     }).catch(() => { r.st = prev; renderList(); toast("저장하지 못했어요. 다시 눌러 주세요."); });
     return;
   }
@@ -424,7 +431,7 @@ function editStart(r) {
 }
 function editEnd() {
   editing = null; $("addTitle").textContent = "세면대 등록"; $("aBtn").textContent = "등록"; $("aCancel").hidden = true;
-  $("aModel").value = ""; $("aMemo").value = ""; setAddSt(1);
+  $("aModel").value = ""; $("aMemo").value = ""; setAddSt(1); $("aSize").hidden = true; sizeQ = "";
 }
 $("aCancel").addEventListener("click", editEnd);
 $("addForm").addEventListener("submit", e => {
@@ -443,17 +450,34 @@ $("addForm").addEventListener("submit", e => {
     if (x.status === "nobrand") { $("addMsg").className = "msg err"; $("addMsg").textContent = "등록되지 않은 브랜드예요. 관리자가 [브랜드] 탭에서 먼저 추가해 주세요."; return; }
     if (x.status !== "ok") throw 0;
     const target = editing || same;
-    if (target) Object.assign(target, { brand, model, st: addSt, memo }); else rows.unshift({ brand, model, st: addSt, memo });
+    const stamp = { at: "방금", by: me ? me.name : "" };
+    if (target) Object.assign(target, { brand, model, st: addSt, memo }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo }, stamp));
     $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤어요" : "등록했어요"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
     editEnd(); refreshBrands(); renderList(); renderReqs();
   }).catch(() => { $("addMsg").className = "msg err"; $("addMsg").textContent = "저장하지 못했어요. 다시 해 주세요."; })
     .finally(() => { $("aBtn").disabled = false; });
 });
 
+/* 등록 칸: 품번을 치면 사이즈 DB 치수 미리 보기 (3글자 이상, 0.5초 멈추면 조회) */
+let sizeT = 0, sizeQ = "";
+function sizePreview() {
+  const q = $("aModel").value.trim(); clearTimeout(sizeT);
+  if (norm(q).length < 3) { $("aSize").hidden = true; sizeQ = ""; return; }
+  sizeT = setTimeout(() => {
+    if (norm(q) === sizeQ) return; sizeQ = norm(q);
+    post({ action: "sinkSize", q }).then(x => {
+      if (x.status === "unauth") return unauth();
+      if (x.status !== "ok" || norm($("aModel").value) !== norm(q)) return;
+      $("aSize").innerHTML = sizeBox(q, x.size); $("aSize").hidden = false;
+    }).catch(() => { sizeQ = ""; });
+  }, 500);
+}
+$("aModel").addEventListener("input", sizePreview);
+
 /* ── 확인 요청 ── */
 // 사이즈 DB(시트 "세면대 사이즈 DB")에서 요청 품번과 맞는 줄. mm 값, 빈칸은 자료 없음
-function sizeBox(q) {
-  const s = sizes[norm(q)]; if (!s) return `<div class="size nz">사이즈 DB에 없는 품번이에요</div>`;
+function sizeBox(q, s0) {
+  const s = s0 !== undefined ? s0 : sizes[norm(q)]; if (!s) return `<div class="size nz">사이즈 DB에 없는 품번이에요</div>`;
   const mm = v => v ? esc(v) : "-";
   return `<div class="size"><b>사이즈 DB (mm)${s.exact ? "" : " · 비슷한 품번"}</b>` + s.rows.map(x =>
     `<div>${esc(x[0])} <b>${esc(x[1])}</b> · ${esc(x[2] || "유형 -")}<br>가로 ${mm(x[3])} · 깊이 ${mm(x[4])} · 높이 ${mm(x[5])} · 림두께 ${mm(x[7])}${x[6] ? " · 볼 " + esc(x[6]) : ""}${x[8] ? " · 수전홀 " + esc(x[8]) : ""}${x[9] ? "<br>" + esc(x[9]) : ""}</div>`).join("") + `</div>`;
@@ -461,7 +485,7 @@ function sizeBox(q) {
 function renderReqs() {
   const k = $("rk").value, open = $("rd").value === "open";
   const list = reqs.filter(r => (!k || r.kind === k) && (!open || !r.done));
-  const n = reqs.filter(r => r.kind === "확인 요청" && !r.done).length;
+  const n = reqs.filter(r => !r.done).length;
   $("reqCount").textContent = n ? `(${n})` : "";
   $("reqs").innerHTML = list.map(r => {
     const hit = rows.find(x => norm(x.model) === norm(r.q));
