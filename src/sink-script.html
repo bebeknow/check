@@ -3,6 +3,7 @@
 // v63: 목록 전체를 페이지에 두지 않는다. 품번을 4글자 이상 치고 [검색]을 누르면 서버가 앞부분이 맞는 품번을 최대 3개만 알려준다.
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwOrp74H1BYqzJ-8Wv7jv4q5qJ8K0qfA1z6YpHIRz-LsfTCHWrP8SoGe_8QYl51Q_zOew/exec";
 const TALK_URL = "https://talk.naver.com/W46FM2";
+const BUY_URL = "https://brand.naver.com/bebeknow";   // 아기비데 상품 주소가 정해지면 바꾸기
 const MIN = 4;
 const STATUS = [
   { cls: "ok", badge: "설치할 수 있어요", msg: "" },
@@ -15,7 +16,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const talkBtn = label => TALK_URL ? `<a class="talk" href="${TALK_URL}" target="_blank" rel="noopener">${label}</a>` : "";
 let brands = [], sentReq = {}, busy = false;
 
-if (TALK_URL) $("talkGuide").href = TALK_URL; else $("talkGuide").hidden = true;
+if (TALK_URL) $("talkGuide").href = $("unknown").href = TALK_URL; else $("talkGuide").hidden = $("unknown").hidden = true;
+if (BUY_URL) $("prod").href = BUY_URL; else $("prod").hidden = true;
+const buyBtn = () => BUY_URL ? `<a class="buy" href="${BUY_URL}" target="_blank" rel="noopener">베베노 아기비데 보러 가기</a>` : "";
 
 function get(params, ms) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 15000);
@@ -35,6 +38,7 @@ function card([brandKo, model, st]) {
     <div class="row"><div><div class="model">${esc(model)}</div><div class="brand">${esc(brandKo)}</div></div><span class="badge">${s.badge}</span></div>
     ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
     <div class="links"><a href="${img}" target="_blank" rel="noopener">사진으로 확인하기 ↗</a></div>
+    ${st === 0 ? buyBtn() : ""}
     ${st ? talkBtn("톡톡으로 사진 보내기") : ""}
   </article>`;
 }

@@ -61,6 +61,21 @@
   .guide ul { margin: 0; padding-left: 18px; font-size: 14px; }
   .guide li { margin: 3px 0; }
   .guide p { font-size: 13px; color: var(--ink2); margin: 10px 0 0; }
+  .prod { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; margin: 0 0 6px; text-decoration: none; color: var(--ink); }
+  .prod img { width: 112px; height: 60px; object-fit: cover; border-radius: 10px; flex: 0 0 auto; background: #eee; }
+  .prod .t { font-size: 15px; font-weight: 800; }
+  .prod .s { font-size: 12.5px; color: var(--ink2); }
+  .prod .go { margin-left: auto; flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--brand); white-space: nowrap; }
+  .find { margin: 4px 0 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0 14px; font-size: 14px; }
+  .find summary { cursor: pointer; padding: 11px 0; font-weight: 700; color: var(--brand); list-style: none; }
+  .find summary::-webkit-details-marker { display: none; }
+  .find summary::after { content: " ▾"; }
+  .find[open] summary::after { content: " ▴"; }
+  .find ol { margin: 0 0 10px; padding-left: 20px; }
+  .find li { margin: 4px 0; }
+  .find li span { color: var(--ink2); font-size: 13px; }
+  .unknown { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 8px 0 0; width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #03c75a; background: #fff; color: #029a46; font-weight: 700; font-size: 15px; text-decoration: none; }
+  .buy { display: flex; align-items: center; justify-content: center; margin-top: 10px; width: 100%; padding: 12px; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 700; font-size: 15px; text-decoration: none; }
   .req { display: grid; gap: 10px; margin-top: 14px; text-align: left; }
   .req label { display: grid; gap: 4px; font-size: 13px; color: var(--ink2); }
   .req input, .req select { font-size: 16px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); width: 100%; }
@@ -80,13 +95,29 @@
     <p class="lead">세면대 품번을 검색하면 베베노 아기비데<br>설치 가능 여부를 알려드려요.</p>
   </header>
 
+  <a class="prod" id="prod" href="#" target="_blank" rel="noopener">
+    <img src="img/bidet.jpg" alt="세면대에 설치한 베베노 아기비데" width="112" height="60">
+    <span><span class="t">베베노 아기비데</span><br><span class="s">세면대에 거는 아기 세정 의자</span></span>
+    <span class="go">보러 가기 ›</span>
+  </a>
+
   <form class="search" id="sform" role="search">
     <div class="box">
       <input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="세면대 품번 (예: CL-831)" aria-label="세면대 품번">
       <button type="submit" id="go">검색</button>
     </div>
-    <p class="hint">품번을 4글자 이상 입력해 주세요. 품번은 세면대 아래쪽이나 설치 설명서, 아파트 시공 자료에서 찾을 수 있어요.</p>
+    <p class="hint">품번을 4글자 이상 입력해 주세요.</p>
   </form>
+
+  <details class="find" id="find">
+    <summary>품번은 어디서 찾나요?</summary>
+    <ol>
+      <li>세면대 <b>아래쪽·뒷면</b>의 스티커나 도장<br><span>허리를 숙여 세면대 밑을 보면 브랜드와 품번이 적혀 있는 경우가 많아요.</span></li>
+      <li>세면대를 살 때 받은 <b>설명서·보증서·영수증</b></li>
+      <li>아파트라면 입주 때 받은 <b>마감재·옵션 안내 자료</b></li>
+    </ol>
+  </details>
+  <a class="unknown" id="unknown" href="#" target="_blank" rel="noopener">품번을 몰라요 → 사진으로 물어보기</a>
 
   <p class="meta" id="meta"></p>
   <div class="list" id="list"></div>
@@ -102,7 +133,7 @@
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
   </section>
 
-  <footer>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 · v2026.11.16-6</footer>
+  <footer>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트돼요 · v2026.11.17-1</footer>
 </div>
 
 
@@ -110,6 +141,7 @@
 // v63: 목록 전체를 페이지에 두지 않는다. 품번을 4글자 이상 치고 [검색]을 누르면 서버가 앞부분이 맞는 품번을 최대 3개만 알려준다.
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwOrp74H1BYqzJ-8Wv7jv4q5qJ8K0qfA1z6YpHIRz-LsfTCHWrP8SoGe_8QYl51Q_zOew/exec";
 const TALK_URL = "https://talk.naver.com/W46FM2";
+const BUY_URL = "https://brand.naver.com/bebeknow";   // 아기비데 상품 주소가 정해지면 바꾸기
 const MIN = 4;
 const STATUS = [
   { cls: "ok", badge: "설치할 수 있어요", msg: "" },
@@ -122,7 +154,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const talkBtn = label => TALK_URL ? `<a class="talk" href="${TALK_URL}" target="_blank" rel="noopener">${label}</a>` : "";
 let brands = [], sentReq = {}, busy = false;
 
-if (TALK_URL) $("talkGuide").href = TALK_URL; else $("talkGuide").hidden = true;
+if (TALK_URL) $("talkGuide").href = $("unknown").href = TALK_URL; else $("talkGuide").hidden = $("unknown").hidden = true;
+if (BUY_URL) $("prod").href = BUY_URL; else $("prod").hidden = true;
+const buyBtn = () => BUY_URL ? `<a class="buy" href="${BUY_URL}" target="_blank" rel="noopener">베베노 아기비데 보러 가기</a>` : "";
 
 function get(params, ms) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 15000);
@@ -142,6 +176,7 @@ function card([brandKo, model, st]) {
     <div class="row"><div><div class="model">${esc(model)}</div><div class="brand">${esc(brandKo)}</div></div><span class="badge">${s.badge}</span></div>
     ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
     <div class="links"><a href="${img}" target="_blank" rel="noopener">사진으로 확인하기 ↗</a></div>
+    ${st === 0 ? buyBtn() : ""}
     ${st ? talkBtn("톡톡으로 사진 보내기") : ""}
   </article>`;
 }
