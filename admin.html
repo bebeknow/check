@@ -46,6 +46,9 @@
   .k-miss { background: #eee; color: #555; }
   .req { padding: 12px 0; border-top: 1px solid var(--line); display: grid; gap: 6px; }
   .req:first-child { border-top: 0; }
+  .size { background: #f6f1ea; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: #4a3f35; display: grid; gap: 3px; }
+  .size b { font-size: 12px; }
+  .size .nz { color: #8a7a6a; }
   .req .acts { display: flex; gap: 6px; flex-wrap: wrap; }
   .req.done { opacity: .55; }
   .msg { font-size: 13px; min-height: 1.2em; margin: 6px 0 0; }
@@ -183,7 +186,7 @@ const norm = s => String(s).toUpperCase().replace(/[^0-9A-Z가-힣]/g, "");
 const key = (b, m) => String(b).trim().toUpperCase() + "|" + norm(m);
 const ko = b => BRAND[b] ? BRAND[b] + " (" + b + ")" : b;
 function setBrands(list) { brands = list || []; Object.keys(BRAND).forEach(k => delete BRAND[k]); brands.forEach(b => { if (b.ko) BRAND[b.brand] = b.ko; }); }
-let token = "", rows = [], reqs = [], shown = 60, editing = null, addSt = 1;
+let token = "", rows = [], reqs = [], sizes = {}, shown = 60, editing = null, addSt = 1;
 
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
 function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
@@ -254,7 +257,7 @@ function start() {
   call(GAS_URL + "?sink=admin&token=" + encodeURIComponent(token)).then(r => {
     if (r.status === "unauth") return unauth();
     if (r.status !== "ok") { $("listMeta").textContent = "불러오지 못했어요. 새로고침해 주세요."; return; }
-    me = r.me; rows = r.rows; reqs = r.reqs; accs = r.accounts || []; setBrands(r.brands);
+    me = r.me; rows = r.rows; reqs = r.reqs; sizes = r.sizes || {}; accs = r.accounts || []; setBrands(r.brands);
     $("who").hidden = false; $("whoName").textContent = me.name + (me.role === "관리자" ? " (관리자)" : "");
     $("accTabBtn").hidden = $("brandTabBtn").hidden = me.role !== "관리자";
     refreshBrands(); renderList(); renderReqs(); renderAccs(); renderBrands();
@@ -448,6 +451,13 @@ $("addForm").addEventListener("submit", e => {
 });
 
 /* ── 확인 요청 ── */
+// 사이즈 DB(시트 "세면대 사이즈 DB")에서 요청 품번과 맞는 줄. mm 값, 빈칸은 자료 없음
+function sizeBox(q) {
+  const s = sizes[norm(q)]; if (!s) return `<div class="size nz">사이즈 DB에 없는 품번이에요</div>`;
+  const mm = v => v ? esc(v) : "-";
+  return `<div class="size"><b>사이즈 DB (mm)${s.exact ? "" : " · 비슷한 품번"}</b>` + s.rows.map(x =>
+    `<div>${esc(x[0])} <b>${esc(x[1])}</b> · ${esc(x[2] || "유형 -")}<br>가로 ${mm(x[3])} · 깊이 ${mm(x[4])} · 높이 ${mm(x[5])} · 림두께 ${mm(x[7])}${x[6] ? " · 볼 " + esc(x[6]) : ""}${x[8] ? " · 수전홀 " + esc(x[8]) : ""}${x[9] ? "<br>" + esc(x[9]) : ""}</div>`).join("") + `</div>`;
+}
 function renderReqs() {
   const k = $("rk").value, open = $("rd").value === "open";
   const list = reqs.filter(r => (!k || r.kind === k) && (!open || !r.done));
@@ -458,6 +468,7 @@ function renderReqs() {
     return `<div class="req${r.done ? " done" : ""}" data-row="${r.row}">
       <div><span class="badge ${r.kind === "확인 요청" ? "k-req" : "k-miss"}">${esc(r.kind)}</span> <b>${esc(r.q)}</b> ${r.brand ? `<span class="sub">${esc(BRAND[r.brand] || r.brand)}</span>` : ""}</div>
       <div class="sub">${esc(r.at)}${r.phone ? " · 연락처 " + esc(r.phone) : ""}${r.note ? " · " + esc(r.note) : ""}${r.done ? " · 처리함 " + esc(r.doneAt) : ""}</div>
+      ${sizeBox(r.q)}
       ${hit ? `<div class="sub">이미 등록됨: ${esc(hit.brand)} ${esc(hit.model)} (${ST[hit.st]})</div>` : ""}
       <div class="acts">${hit ? "" : `<button type="button" data-reg>목록에 등록</button>`}<button type="button" data-done>${r.done ? "처리 취소" : "처리 완료"}</button></div>
     </div>`;
