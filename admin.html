@@ -140,7 +140,7 @@
           <select id="rk"><option value="확인 요청">고객 확인 요청</option><option value="검색 실패">검색했는데 없던 품번</option><option value="">전체</option></select>
           <select id="rd"><option value="open">처리 안 한 것</option><option value="">처리한 것도 보기</option></select>
         </div>
-        <div class="meta">고객이 남긴 연락처는 결과를 알려드린 뒤 시트("세면대 확인요청" 탭)에서 지워 주세요.</div>
+        <div class="meta">고객이 남긴 연락처는 결과를 알려드린 뒤 [삭제]로 지워 주세요.</div>
         <div id="reqs"></div>
       </div>
     </section>
@@ -470,7 +470,7 @@ function renderReqs() {
       <div class="sub">${esc(r.at)}${r.phone ? " · 연락처 " + esc(r.phone) : ""}${r.note ? " · " + esc(r.note) : ""}${r.done ? " · 처리함 " + esc(r.doneAt) : ""}</div>
       ${sizeBox(r.q)}
       ${hit ? `<div class="sub">이미 등록됨: ${esc(hit.brand)} ${esc(hit.model)} (${ST[hit.st]})</div>` : ""}
-      <div class="acts">${hit ? "" : `<button type="button" data-reg>목록에 등록</button>`}<button type="button" data-done>${r.done ? "처리 취소" : "처리 완료"}</button></div>
+      <div class="acts">${hit ? "" : `<button type="button" data-reg>목록에 등록</button>`}<button type="button" data-done>${r.done ? "처리 취소" : "처리 완료"}</button><button type="button" data-rdel>삭제</button></div>
     </div>`;
   }).join("") || `<div class="sub">${open ? "처리할 요청이 없어요." : "요청이 없어요."}</div>`;
 }
@@ -482,6 +482,16 @@ $("reqs").addEventListener("click", e => {
     editEnd(); showTab("list");
     pickBrand(r.brand); $("aModel").value = r.q; $("aMemo").value = "고객 요청 " + r.at.slice(5, 10);
     window.scrollTo({ top: 0, behavior: "smooth" }); ($("aBrand").value ? $("aModel") : $("aBrand")).focus();
+    return;
+  }
+  if (e.target.closest("[data-rdel]")) {
+    if (!confirm(r.q + " 요청을 지울까요? 되돌릴 수 없어요.")) return;
+    post({ action: "sinkReqDel", row: r.row, q: r.q }).then(x => {
+      if (x.status === "unauth") return unauth();
+      if (x.status === "moved") { toast("목록이 바뀌었어요. 새로고침한 뒤 다시 지워 주세요."); return; }
+      if (x.status !== "ok") throw 0;
+      reqs = x.reqs || reqs.filter(y => y !== r); renderReqs(); toast(r.q + " 요청을 지웠어요");
+    }).catch(() => toast("지우지 못했어요. 다시 해 주세요."));
     return;
   }
   if (e.target.closest("[data-done]")) {
