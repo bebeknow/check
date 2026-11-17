@@ -30,12 +30,14 @@ function post(body) {
 }
 get({ sink: "brands" }).then(j => { if (j && Array.isArray(j.brands)) brands = j.brands; }).catch(() => {});
 
-function card([brandKo, model, st]) {
+// link: 서버가 주는 제조사 제품 상세 페이지 주소 (https 로 시작할 때만)
+function card([brandKo, model, st, link]) {
   const s = STATUS[st] || STATUS[1];
   return `<article class="item ${s.cls}">
     <div class="row"><div><div class="model">${esc(model)}</div><div class="brand">${esc(brandKo)}</div></div><span class="badge">${s.badge}</span></div>
     ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
     ${st === 0 ? buyBtn() : ""}
+    ${/^https?:\/\//.test(link || "") ? `<a class="info" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(brandKo)} 제품 정보 보기 ↗</a>` : ""}
   </article>`;
 }
 
@@ -85,6 +87,8 @@ function search(raw) {
   busy = true; $("go").disabled = true;
   $("meta").textContent = "";
   $("list").innerHTML = `<div class="empty"><b>검색 중입니다.</b></div>`;
+  // 주소를 ?q=품번 으로 바꿔 둔다 → 제품 정보 페이지를 보고 뒤로 돌아오면 같은 검색 결과가 다시 열림
+  try { history.replaceState(null, "", location.pathname + "?q=" + encodeURIComponent(raw)); } catch (e) {}
   get({ sink: "find", q: raw }).then(j => {
     if (!j || j.status === "busy") { $("list").innerHTML = `<div class="empty"><b>잠시 후 다시 검색해 주세요.</b>급하시면 아래 네이버 톡톡으로 문의해 주세요.</div>`; return; }
     if (j.status === "short") { $("list").innerHTML = `<div class="empty"><b>품번을 ${MIN}글자 이상 입력해 주세요.</b></div>`; return; }
