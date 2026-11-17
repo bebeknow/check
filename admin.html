@@ -41,6 +41,9 @@
   .sub { font-size: 12px; color: var(--ink2); }
   .when { font-size: 12px; color: #9a8f86; }
   .plink { font-size: 12px; color: var(--brand); }
+  .ilink { grid-column: 1 / -1; display: flex; gap: 6px; }
+  .ilink input { flex: 1; min-width: 0; font-size: 14px; padding: 7px 10px; }
+  .ilink button { padding: 6px 10px; font-size: 13px; }
   .memo { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink2); }
   .memo span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .memo button { padding: 4px 8px; font-size: 12px; }
@@ -590,7 +593,8 @@ function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
     <div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}</div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
-    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+    <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 직접 링크 지움)" value="${esc(r.mylink || "")}"><button type="button" data-lsave>저장</button><button type="button" data-lcancel>취소</button></div>
   </div>`;
 }
 function renderList() {
@@ -616,6 +620,24 @@ $("rows").addEventListener("click", e => {
       if (x.status !== "ok") throw 0;
       r.at = "방금"; r.by = me ? me.name : ""; if (el) el.classList.remove("saving"); toast(r.model + " → " + ST[st]); renderList();
     }).catch(() => { r.st = prev; renderList(); toast("저장하지 못했습니다. 다시 눌러 주세요."); });
+    return;
+  }
+  const box = rowEl.querySelector(".ilink");
+  if (e.target.closest("[data-link]")) { box.hidden = !box.hidden; if (!box.hidden) { const i = box.querySelector("input"); i.focus(); i.select(); } return; }
+  if (e.target.closest("[data-lcancel]")) { box.querySelector("input").value = r.mylink || ""; box.hidden = true; return; }
+  if (e.target.closest("[data-lsave]")) {
+    const link = box.querySelector("input").value.trim();
+    if (link && !/^https?:\/\/\S+$/i.test(link)) { toast("https:// 로 시작하는 주소로 넣어 주세요."); return; }
+    rowEl.classList.add("saving");
+    post({ action: "sinkSave", brand: r.brand, model: r.model, st: r.st, link }).then(x => {
+      if (x.status === "unauth") return unauth();
+      if (x.status === "badlink") { rowEl.classList.remove("saving"); toast("주소를 다시 확인해 주세요."); return; }
+      if (x.status !== "ok") throw 0;
+      r.mylink = link; r.at = "방금"; r.by = me ? me.name : "";
+      if (link) { r.link = link; r.auto = false; } else if (!r.auto) r.link = "";
+      rowEl.outerHTML = rowHtml(r, rows.indexOf(r));
+      toast(r.model + (link ? " 링크 저장" : " 직접 링크 지움") + " — 고객 화면은 최대 5분 뒤 반영");
+    }).catch(() => { rowEl.classList.remove("saving"); toast("저장하지 못했습니다. 다시 해 주세요."); });
     return;
   }
   if (e.target.closest("[data-edit]")) { editStart(r); return; }
