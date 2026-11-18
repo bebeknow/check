@@ -206,7 +206,6 @@
         </div>
         <div class="meta" id="dbMeta">불러오는 중…</div>
         <div id="dbRows"></div>
-        <button class="more" id="dbMore" hidden>더 보기</button>
         <div class="meta" style="margin-top:12px">치수를 고치거나 새 세면대를 넣을 때는 시트 "세면대 사이즈 DB" 탭에서 해 주세요. 고객 검색에는 나오지 않습니다.</div>
       </div>
     </section>
@@ -364,9 +363,10 @@ $("mainTabs").addEventListener("click", e => {
 function showTab(t) { $("mainTabs").querySelector(`[data-tab="${t}"]`).click(); }
 
 /* ── 사이즈 DB ── 등록 여부는 세면대 목록(rows)과 품번을 맞춰서 바로 계산 */
-let db = null, dbShown = 60, dbBusy = false;
+let db = null, dbBusy = false, regSet = null;
 const dbKeys = m => { const k = [norm(m)]; String(m).split(/[\s()\/+]+/).forEach(t => { t = norm(t); if (t.length >= 4 && /[A-Z]/.test(t) && /\d/.test(t) && !k.includes(t)) k.push(t); }); return k; };
-function dbReg(x) { const set = new Set(rows.map(r => norm(r.model))); return dbKeys(x[2]).some(k => set.has(k)); }
+// 전체 목록을 한 번에 그리므로, 그리는 동안에는 등록 품번 모음을 한 번만 만든다
+function dbReg(x) { const set = regSet || new Set(rows.map(r => norm(r.model))); return dbKeys(x[2]).some(k => set.has(k)); }
 function loadDb(force) {
   if ((db && !force) || dbBusy) return renderDb();
   dbBusy = true; $("dbMeta").textContent = "불러오는 중…";
@@ -416,13 +416,14 @@ function dbRowHtml(x) {
 }
 function renderDb() {
   if (!db) return;
-  const list = dbFiltered(), noReg = db.filter(x => !dbReg(x)).length;
-  $("dbMeta").textContent = `전체 ${db.length}개 · 미등록 ${noReg}개 · 보이는 것 ${list.length}개` + ($("dq").value.trim() && $("dReg").value === "no" ? " (검색 중에는 등록된 것도 함께 보입니다)" : "");
-  $("dbRows").innerHTML = list.slice(0, dbShown).map(dbRowHtml).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
-  $("dbMore").hidden = list.length <= dbShown;
+  regSet = new Set(rows.map(r => norm(r.model)));
+  try {
+    const list = dbFiltered(), noReg = db.filter(x => !dbReg(x)).length;
+    $("dbMeta").textContent = `전체 ${db.length}개 · 미등록 ${noReg}개 · 보이는 것 ${list.length}개` + ($("dq").value.trim() && $("dReg").value === "no" ? " (검색 중에는 등록된 것도 함께 보입니다)" : "");
+    $("dbRows").innerHTML = list.map(dbRowHtml).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
+  } finally { regSet = null; }
 }
-["dq", "dReg", "dRv", "dBrand", "dType"].forEach(id => $(id).addEventListener("input", () => { dbShown = 60; renderDb(); }));
-$("dbMore").addEventListener("click", () => { dbShown += 60; renderDb(); });
+["dq", "dReg", "dRv", "dBrand", "dType"].forEach(id => $(id).addEventListener("input", renderDb));
 // 사이즈 DB 브랜드 이름(예: "계림요업(계림바스 KERIM)") → 등록된 브랜드
 function dbBrand(name) {
   const n = norm(name);
