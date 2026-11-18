@@ -237,7 +237,6 @@
         </div>
         <div class="meta" id="logMeta">불러오는 중…</div>
         <div id="logRows"></div>
-        <button class="more" id="logMore" hidden>더 보기</button>
         <div class="meta" style="margin-top:12px">관리자 화면에서 바꾼 것만 남습니다. 시트에서 직접 고친 내용은 남지 않습니다.</div>
       </div>
     </section>
@@ -491,13 +490,13 @@ $("dbRows").addEventListener("click", e => {
 });
 
 /* ── 변경 기록 (관리자) ── [일시, 누가, 구분, 동작, 대상, 바꾸기 전, 바꾼 뒤] */
-let logs = null, logShown = 80, logBusy = false;
+let logs = null, logBusy = false;
 function loadLog() {
   if (logBusy) return; logBusy = true; $("logMeta").textContent = "불러오는 중…";
   post({ action: "sinkLogList" }).then(x => {
     if (x.status === "unauth") return unauth();
     if (x.status !== "ok") throw 0;
-    logs = x.rows || []; logShown = 80; renderLog();
+    logs = x.rows || []; renderLog();
   }).catch(() => { $("logMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; }).finally(() => { logBusy = false; });
 }
 function renderLog() {
@@ -505,15 +504,13 @@ function renderLog() {
   const q = $("lq").value.trim().toLowerCase(), k = $("lk").value;
   const list = logs.filter(l => (!k || l[2] === k) && (!q || l.join(" ").toLowerCase().includes(q)));
   $("logMeta").textContent = `최근 ${logs.length}건 · 보이는 것 ${list.length}건`;
-  $("logRows").innerHTML = list.slice(0, logShown).map(l => `<div class="lg">
+  $("logRows").innerHTML = list.map(l => `<div class="lg">
       <div><span class="badge k-act">${esc(l[2])} ${esc(l[3])}</span> <b>${esc(l[4])}</b></div>
       ${l[5] || l[6] ? `<div class="chg">${l[5] ? `<s>${esc(l[5])}</s>` : ""}${l[5] && l[6] ? " → " : ""}${l[6] ? esc(l[6]) : ""}</div>` : ""}
       <div class="sub">${esc(l[0])} · ${esc(l[1] || "-")}</div>
     </div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
-  $("logMore").hidden = list.length <= logShown;
 }
-["lq", "lk"].forEach(id => $(id).addEventListener("input", () => { logShown = 80; renderLog(); }));
-$("logMore").addEventListener("click", () => { logShown += 80; renderLog(); });
+["lq", "lk"].forEach(id => $(id).addEventListener("input", renderLog));
 
 /* ── 브랜드 (관리자) ── */
 let bEditing = null;
