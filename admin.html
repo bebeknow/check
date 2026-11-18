@@ -667,6 +667,7 @@ function rowHtml(r, i) {
   </div>`;
 }
 function renderList() {
+  if ($("addForm").parentNode === $("rows")) return;   // 줄 밑에서 수정 중이면 목록을 다시 그리지 않음 (입력 중인 칸이 사라지지 않게)
   const list = filtered();
   const c = [0, 0, 0]; rows.forEach(r => c[r.st]++);
   $("listMeta").textContent = `전체 ${rows.length}개 (가능 ${c[0]} · 확인 필요 ${c[1]} · 불가 ${c[2]}) · 보이는 것 ${list.length}개`;
@@ -674,7 +675,7 @@ function renderList() {
   $("rows").innerHTML = list.map(r => rowHtml(r, at.get(r))).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
   keepScan();
 }
-["fq", "fb", "fs", "fo"].forEach(id => $(id).addEventListener("input", renderList));
+["fq", "fb", "fs", "fo"].forEach(id => $(id).addEventListener("input", () => { addFormHome(); editEnd(); renderList(); }));
 
 $("rows").addEventListener("click", e => {
   const rowEl = e.target.closest(".row"); if (!rowEl) return;
@@ -709,7 +710,7 @@ $("rows").addEventListener("click", e => {
     }).catch(() => { rowEl.classList.remove("saving"); toast("저장하지 못했습니다. 다시 해 주세요."); });
     return;
   }
-  if (e.target.closest("[data-edit]")) { editStart(r); return; }
+  if (e.target.closest("[data-edit]")) { editStart(r, rowEl); return; }
   if (e.target.closest("[data-del]")) {
     if (!confirm(`${r.brand} ${r.model} 을(를) 목록에서 지우시겠습니까?\n고객 화면에서도 사라집니다.`)) return;
     post({ action: "sinkDel", brand: r.brand, model: r.model }).then(x => {
@@ -728,13 +729,16 @@ $("aSt").addEventListener("click", e => { const b = e.target.closest("button"); 
 /* 등록 칸은 평소 [세면대 목록] 탭 맨 위에 있고, 사이즈 DB 의 [등록하기]를 누르면 그 줄 바로 밑으로 옮겨 온다 */
 const addHome = { parent: $("addForm").parentNode, next: $("addForm").nextSibling };
 function addFormHome() { if ($("addForm").parentNode !== addHome.parent) addHome.parent.insertBefore($("addForm"), addHome.next); }
-function editStart(r) {
+function editStart(r, rowEl) {
   addFormHome(); editing = r; showTab("list");
+  if (rowEl) rowEl.after($("addForm"));   // 위로 올라가지 않고 누른 줄 바로 밑에서 수정
   $("addTitle").textContent = "세면대 수정"; $("aBtn").textContent = "저장"; $("aCancel").hidden = $("aX").hidden = false;
   pickBrand(r.brand); $("aModel").value = r.model; $("aMemo").value = r.memo; setAddSt(r.st);
   $("aLink").value = r.mylink || "";
   $("aLinkAuto").hidden = !(r.auto && r.link); if (r.auto && r.link) $("aLinkAuto").textContent = "비워 두면 자동으로 찾은 링크를 씁니다: " + r.link;
-  $("addMsg").textContent = ""; window.scrollTo({ top: 0, behavior: "smooth" }); $("aModel").focus();
+  $("addMsg").textContent = "";
+  if (rowEl) { $("addForm").scrollIntoView({ behavior: "smooth", block: "nearest" }); $("aModel").focus({ preventScroll: true }); }
+  else { window.scrollTo({ top: 0, behavior: "smooth" }); $("aModel").focus(); }
 }
 function editEnd() {
   addFormHome(); editing = null; $("addTitle").textContent = "세면대 등록"; $("aBtn").textContent = "등록"; $("aCancel").hidden = $("aX").hidden = true;
