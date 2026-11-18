@@ -759,12 +759,15 @@ $("addForm").addEventListener("submit", e => {
     if (x.status !== "ok") throw 0;
     const target = editing || same;
     const stamp = { at: "방금", by: me ? me.name : "", mylink: link };
+    // 사이즈 DB 의 같은 브랜드·품번 사진을 바로 붙인다 (서버 목록을 다시 받기 전에도 사진이 보이게)
+    { const nb = norm(brand), nk = norm(ko(brand)), d = (db || []).find(x => x[14] && dbKeys(x[2]).includes(norm(model)) && (norm(x[1]).includes(nb) || (nk && norm(x[1]).includes(nk)))); if (d) stamp.photo = d[14]; }
     if (link) { stamp.link = link; stamp.auto = false; } else if (target && !target.auto) { stamp.link = ""; }
     if (target) Object.assign(target, { brand, model, st: addSt, memo }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo }, stamp));
     $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
     const inline = $("addForm").parentNode !== addHome.parent;
     editEnd(); refreshBrands(); renderList(); renderReqs();
-    if (inline) { toast(`${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]})`); if (db) renderDb(); }
+    if (inline) toast(`${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]})`);
+    if (db) renderDb();   // 등록한 줄은 바로 "등록됨"으로 분류돼 미등록 목록에서 사라진다
   }).catch(() => { $("addMsg").className = "msg err"; $("addMsg").textContent = "저장하지 못했습니다. 다시 해 주세요."; })
     .finally(() => { $("aBtn").disabled = false; });
 });
