@@ -381,6 +381,7 @@ function loadDb(force) {
 }
 function dbFiltered() {
   const q = norm($("dq").value), reg = $("dReg").value, rv = $("dRv").value, b = $("dBrand").value, t = $("dType").value;
+  const hold = x => x[11] === "보류" && !dbReg(x) ? 1 : 0;   // 미등록 중 보류로 표시한 것은 맨 아래로
   return db.filter(x => {
     const isReg = dbReg(x);
     // 품번·브랜드를 검색할 때는 "미등록만"이어도 등록된 것까지 함께 보여 줌
@@ -390,7 +391,7 @@ function dbFiltered() {
     if (b && x[1] !== b) return false;
     if (t && String(x[3]).split(/[(/]/)[0].trim() !== t) return false;
     return !q || norm(x[2]).includes(q) || norm(x[1]).includes(q);
-  });
+  }).sort((p, q2) => hold(p) - hold(q2));
 }
 function dbSrc(src) {
   src = String(src || "").trim(); if (!src) return "";
