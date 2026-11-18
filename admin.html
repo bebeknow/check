@@ -410,8 +410,9 @@ function thumb(u) {
   const href = /^https?:/.test(u) ? esc(u) : "#";
   if (/^https:/.test(u)) return `<a class="thumb" href="${href}" target="_blank" rel="noopener noreferrer"><img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"></a>`;
   if (keepCache.has(u) && !keepCache.get(u)) return "";   // 보관 사진 없음
-  const v = keepCache.get(u);
-  return `<a class="thumb" href="${href}" target="_blank" rel="noopener noreferrer"><img alt="" data-keep="${esc(u)}"${v ? ` src="${v}"` : ""} onerror="this.parentNode.hidden=true"></a>`;
+  const v = keepCache.get(u), img = `<img alt="" data-keep="${esc(u)}"${v ? ` src="${v}"` : ""} onerror="this.parentNode.hidden=true">`;
+  // 원본 주소가 없는 보관 사진(PDF·페이지에서 잘라 낸 것)은 누를 곳이 없으므로 링크 없이
+  return /^saved:/.test(u) ? `<span class="thumb">${img}</span>` : `<a class="thumb" href="${href}" target="_blank" rel="noopener noreferrer">${img}</a>`;
 }
 function keepScan() {
   const imgs = [...document.querySelectorAll("img[data-keep]:not([src])")];
@@ -446,6 +447,7 @@ function dbRowHtml(x) {
 }
 function renderDb() {
   if (!db) return;
+  if ($("addForm").parentNode !== addHome.parent) return;   // 줄 밑에서 입력 중이면 목록을 다시 그리지 않음 (입력 중인 칸이 사라지지 않게)
   regSet = new Set(rows.map(r => norm(r.model)));
   try {
     const list = dbFiltered(), noReg = db.filter(x => !dbReg(x)).length;
@@ -454,7 +456,7 @@ function renderDb() {
     keepScan();
   } finally { regSet = null; }
 }
-["dq", "dReg", "dRv", "dBrand", "dType"].forEach(id => $(id).addEventListener("input", renderDb));
+["dq", "dReg", "dRv", "dBrand", "dType"].forEach(id => $(id).addEventListener("input", () => { addFormHome(); editEnd(); renderDb(); }));
 // 사이즈 DB 브랜드 이름(예: "계림요업(계림바스 KERIM)") → 등록된 브랜드
 function dbBrand(name) {
   const n = norm(name);
@@ -479,7 +481,7 @@ $("dbRows").addEventListener("click", e => {
   const el = e.target.closest("[data-dr]"); if (!el) return;
   const x = db.find(r => r[0] === +el.dataset.dr); if (!x) return;
   if (e.target.closest("[data-dreg]")) {
-    editEnd(); showTab("list");
+    editEnd(); el.after($("addForm")); $("aCancel").hidden = false;   // 맨 위로 올라가지 않고 누른 줄 바로 밑에서 연다
     const b = dbBrand(x[1]); $("aBrand").value = b;
     $("aModel").value = x[2]; setAddSt(1);
     $("aMemo").value = ["사이즈 DB", x[3], [x[4], x[5], x[6]].some(Boolean) ? `${x[4] || "-"}×${x[5] || "-"}×${x[6] || "-"}mm` : "", x[8] ? "림 " + x[8] : ""].filter(Boolean).join(" · ").slice(0, 300);
@@ -489,7 +491,7 @@ $("dbRows").addEventListener("click", e => {
       $("addMsg").innerHTML = `"${esc(x[1])}"는 등록된 브랜드가 아닙니다. <button type="button" id="dbAddBrand" style="padding:4px 10px;font-size:12px">이 브랜드 추가</button>`;
       $("dbAddBrand").onclick = () => dbAddBrand(x[1]);
     } else $("addMsg").textContent = `"${x[1]}"는 등록된 브랜드가 아닙니다. 관리자에게 브랜드 추가를 요청해 주세요.`;
-    sizePreview(); window.scrollTo({ top: 0, behavior: "smooth" }); (b ? $("aModel") : $("aBrand")).focus();
+    sizePreview(); $("addForm").scrollIntoView({ behavior: "smooth", block: "nearest" }); (b ? $("aModel") : $("aBrand")).focus({ preventScroll: true });
     return;
   }
   const lbox = el.querySelector(".ilink");
@@ -722,8 +724,11 @@ $("aBrand").addEventListener("change", () => { if ($("aBrand").value === "__new"
 function pickBrand(b) { const hit = brands.find(x => x.brand.toUpperCase() === String(b || "").trim().toUpperCase()); $("aBrand").value = hit ? hit.brand : ""; return !!hit; }
 function setAddSt(s) { addSt = s; $("aSt").querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.st === s)); }
 $("aSt").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setAddSt(+b.dataset.st); });
+/* 등록 칸은 평소 [세면대 목록] 탭 맨 위에 있고, 사이즈 DB 의 [등록하기]를 누르면 그 줄 바로 밑으로 옮겨 온다 */
+const addHome = { parent: $("addForm").parentNode, next: $("addForm").nextSibling };
+function addFormHome() { if ($("addForm").parentNode !== addHome.parent) addHome.parent.insertBefore($("addForm"), addHome.next); }
 function editStart(r) {
-  editing = r; showTab("list");
+  addFormHome(); editing = r; showTab("list");
   $("addTitle").textContent = "세면대 수정"; $("aBtn").textContent = "저장"; $("aCancel").hidden = false;
   pickBrand(r.brand); $("aModel").value = r.model; $("aMemo").value = r.memo; setAddSt(r.st);
   $("aLink").value = r.mylink || "";
@@ -731,7 +736,7 @@ function editStart(r) {
   $("addMsg").textContent = ""; window.scrollTo({ top: 0, behavior: "smooth" }); $("aModel").focus();
 }
 function editEnd() {
-  editing = null; $("addTitle").textContent = "세면대 등록"; $("aBtn").textContent = "등록"; $("aCancel").hidden = true;
+  addFormHome(); editing = null; $("addTitle").textContent = "세면대 등록"; $("aBtn").textContent = "등록"; $("aCancel").hidden = true;
   $("aModel").value = ""; $("aMemo").value = ""; $("aLink").value = ""; $("aLinkAuto").hidden = true; setAddSt(1); $("aSize").hidden = true; sizeQ = "";
 }
 $("aCancel").addEventListener("click", editEnd);
@@ -757,7 +762,9 @@ $("addForm").addEventListener("submit", e => {
     if (link) { stamp.link = link; stamp.auto = false; } else if (target && !target.auto) { stamp.link = ""; }
     if (target) Object.assign(target, { brand, model, st: addSt, memo }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo }, stamp));
     $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
+    const inline = $("addForm").parentNode !== addHome.parent;
     editEnd(); refreshBrands(); renderList(); renderReqs();
+    if (inline) { toast(`${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]})`); if (db) renderDb(); }
   }).catch(() => { $("addMsg").className = "msg err"; $("addMsg").textContent = "저장하지 못했습니다. 다시 해 주세요."; })
     .finally(() => { $("aBtn").disabled = false; });
 });
