@@ -178,7 +178,6 @@
         </div>
         <div class="meta" id="listMeta"></div>
         <div id="rows"></div>
-        <button class="more" id="more" hidden>더 보기</button>
       </div>
     </section>
 
@@ -265,7 +264,7 @@ const norm = s => String(s).toUpperCase().replace(/[^0-9A-Z가-힣]/g, "");
 const key = (b, m) => String(b).trim().toUpperCase() + "|" + norm(m);
 const ko = b => BRAND[b] ? BRAND[b] + " (" + b + ")" : b;
 function setBrands(list) { brands = list || []; Object.keys(BRAND).forEach(k => delete BRAND[k]); brands.forEach(b => { if (b.ko) BRAND[b.brand] = b.ko; }); }
-let token = "", rows = [], reqs = [], sizes = {}, shown = 60, editing = null, addSt = 1;
+let token = "", rows = [], reqs = [], sizes = {}, editing = null, addSt = 1;
 
 function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
 function load(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
@@ -638,11 +637,10 @@ function renderList() {
   const list = filtered();
   const c = [0, 0, 0]; rows.forEach(r => c[r.st]++);
   $("listMeta").textContent = `전체 ${rows.length}개 (가능 ${c[0]} · 확인 필요 ${c[1]} · 불가 ${c[2]}) · 보이는 것 ${list.length}개`;
-  $("rows").innerHTML = list.slice(0, shown).map(r => rowHtml(r, rows.indexOf(r))).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
-  $("more").hidden = list.length <= shown;
+  const at = new Map(rows.map((r, i) => [r, i]));   // 전체를 한 번에 그리므로 줄 번호는 한 번만 찾음
+  $("rows").innerHTML = list.map(r => rowHtml(r, at.get(r))).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
 }
-["fq", "fb", "fs", "fo"].forEach(id => $(id).addEventListener("input", () => { shown = 60; renderList(); }));
-$("more").addEventListener("click", () => { shown += 60; renderList(); });
+["fq", "fb", "fs", "fo"].forEach(id => $(id).addEventListener("input", renderList));
 
 $("rows").addEventListener("click", e => {
   const rowEl = e.target.closest(".row"); if (!rowEl) return;
