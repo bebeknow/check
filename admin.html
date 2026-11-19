@@ -204,6 +204,7 @@
           <select id="dType"><option value="">모든 유형</option></select>
         </div>
         <div class="meta" id="dbMeta">불러오는 중…</div>
+        <div style="margin:4px 0 8px"><button type="button" id="dbCsv" style="padding:6px 12px;font-size:13px">림두께 측정 목록 내려받기 (등록된 것 중 림두께 빈 줄, CSV)</button></div>
         <div id="dbRows"></div>
         <div class="meta" style="margin-top:12px">치수를 고치거나 새 세면대를 넣을 때는 시트 "세면대 사이즈 DB" 탭에서 해 주세요. 고객 검색에는 나오지 않습니다.</div>
       </div>
@@ -379,6 +380,18 @@ function loadDb(force) {
     renderDb();
   }).catch(() => { $("dbMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; }).finally(() => { dbBusy = false; });
 }
+// 림두께 측정 목록: 등록된 세면대 중 사이즈 DB 림두께가 빈 줄 → CSV (엑셀에서 림두께 칸을 채워 두면 입력할 때 참고)
+$("dbCsv").addEventListener("click", () => {
+  if (!db) return;
+  regSet = new Set(rows.map(r => norm(r.model)));
+  let list; try { list = db.filter(x => !x[8] && dbReg(x)); } finally { regSet = null; }
+  const q = v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+  const csv = "﻿" + [["브랜드", "품번", "유형", "가로", "깊이", "높이", "림두께(직접 잰 값 mm)"].map(q).join(",")]
+    .concat(list.sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ko") || String(a[2]).localeCompare(String(b[2]))).map(x => [x[1], x[2], x[3], x[4], x[5], x[6], ""].map(q).join(","))).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "림두께_측정목록.csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(`${list.length}줄 내려받기`);
+});
 function dbFiltered() {
   const q = norm($("dq").value), reg = $("dReg").value, rv = $("dRv").value, b = $("dBrand").value, t = $("dType").value;
   const hold = x => x[11] === "보류" && !dbReg(x) ? 1 : 0;   // 미등록 중 보류로 표시한 것은 맨 아래로
