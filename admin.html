@@ -99,6 +99,7 @@
   @media (max-width: 1100px) { #sortGrid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); } }
   .scard { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 2px; display: flex; flex-direction: column; gap: 3px; content-visibility: auto; contain-intrinsic-size: 190px 220px; min-width: 0; }
   .scard.saving { opacity: .45; pointer-events: none; }
+  .scard.gone { display: none; }
   .scard .thumb, .scard .sph { width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 4px; border-color: transparent; }
   .scard .sph { background: #f3efe9; color: var(--sub, #888); display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; border: 1px dashed var(--line); }
   .scard .sm { font-size: 12px; font-weight: 700; word-break: break-all; }
@@ -451,7 +452,7 @@ function sortCard(x) {
     <div class="sbtns"><button type="button" class="so" data-act="o" title="설치 가능 (등록)" aria-label="설치 가능으로 등록">○</button><button type="button" class="st" data-act="t" title="보류" aria-label="보류">△</button><button type="button" class="sx" data-act="x" title="설치 불가 (등록)" aria-label="설치 불가로 등록">✕</button></div></div>`;
 }
 function sortMeta() {
-  const cards = [...$("sortGrid").querySelectorAll(".scard")], withPhoto = cards.filter(c => c.querySelector(".thumb")).length;
+  const cards = [...$("sortGrid").querySelectorAll(".scard:not(.gone)")], withPhoto = cards.filter(c => c.querySelector(".thumb")).length;
   $("sortMeta").textContent = `분류할 것 ${cards.length}개 (사진 있음 ${withPhoto} · 사진 없음 ${cards.length - withPhoto})`;
   $("sUndo").disabled = !sortUndo.length;
 }
@@ -485,7 +486,8 @@ async function sortApply(x, act) {
   const st = act === "o" ? 0 : 2, brand = await sortBrand(x), memo = sortMemo(x);
   const r = await post({ action: "sinkSave", brand, model: x[2], st, memo, link: "", create: true });
   if (r.status === "unauth") { unauth(); throw new Error("로그인이 필요합니다."); }
-  if (r.status === "exists" || r.status === "dup") throw new Error("같은 브랜드·품번이 이미 등록돼 있습니다.");
+  if (r.status === "exists" || r.status === "dup") throw new Error("이미 등록돼 있습니다 (다른 분이 먼저 했을 수 있어요). 새로고침하면 사라집니다.");
+  if (r.status === "busy") throw new Error("다른 저장이 진행 중입니다. 잠시 뒤 다시 눌러 주세요.");
   if (r.status === "nobrand") throw new Error("등록되지 않은 브랜드입니다.");
   if (r.status !== "ok") throw new Error("저장하지 못했습니다. 다시 해 주세요.");
   rows.unshift({ brand, model: x[2], st, memo, at: "방금", by: me ? me.name : "", mylink: "", link: "", auto: false, photo: x[14] || "" });
@@ -495,14 +497,16 @@ $("sortGrid").addEventListener("click", async e => {
   const btn = e.target.closest(".sbtns button"); if (!btn) return;
   const card = btn.closest(".scard"), x = db.find(r => r[0] === +card.dataset.dr), act = btn.dataset.act;
   if (!x || card.classList.contains("saving")) return;
-  card.classList.add("saving");
+  // 누르는 순간 카드를 치우고(저장은 뒤에서 진행), 저장이 안 되면 같은 자리에 다시 보여 준다
+  card.classList.add("saving", "gone"); sortMeta();
+  const back = () => { card.classList.remove("saving", "gone"); sortMeta(); };
   try {
     const res = await sortApply(x, act);
-    if (res === "same") { card.classList.remove("saving"); toast(`${x[2]} 은(는) 이미 보류입니다`); return; }
-    toast(`${x[2]} → ${act === "o" ? "설치 가능으로 등록" : act === "t" ? "보류" : "설치 불가로 등록"}`);
+    if (res === "same") { back(); toast(`${x[2]} 은(는) 이미 보류입니다`); return; }
+    toast(`${x[2]} → ${act === "o" ? "설치 가능으로 등록" : act === "t" ? "보류" : "설치 불가로 등록"} (저장됨)`);
     card.remove(); sortMeta();
     if (act !== "t") { refreshBrands(); renderList(); }
-  } catch (err) { card.classList.remove("saving"); toast(err && err.message ? err.message : "저장하지 못했습니다. 다시 해 주세요."); }
+  } catch (err) { back(); toast((x[2]) + ": " + (err && err.message ? err.message : "저장하지 못했습니다. 다시 눌러 주세요.")); }
 });
 $("sUndo").addEventListener("click", async () => {
   const u = sortUndo[sortUndo.length - 1]; if (!u) return;
