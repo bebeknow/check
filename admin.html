@@ -92,14 +92,14 @@
   .sortf { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   .sortf select { flex: 1 1 160px; }
   .sopt { font-size: 13px; display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
-  .wrap:has(#tab-sort:not([hidden])) { max-width: 1700px; }   /* 사진 분류 탭에서는 화면을 넓게 써서 한 줄에 10개 */
-  .wrap:has(#tab-sort:not([hidden])) { padding-left: 8px; padding-right: 8px; }
-  #tab-sort > .card { padding: 8px; }
-  #sortGrid { --scols: 6; display: grid; grid-template-columns: repeat(var(--scols), minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+  .wrap:has(#tab-sort:not([hidden])) { max-width: none; }   /* 사진 분류 탭에서는 화면을 넓게 써서 한 줄에 10개 */
+  .wrap:has(#tab-sort:not([hidden])) { padding-left: 4px; padding-right: 4px; }
+  #tab-sort > .card { padding: 6px 4px; border-radius: 8px; }
+  #sortGrid { --scols: 10; display: grid; grid-template-columns: repeat(var(--scols), minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
   @media (max-width: 1100px) { #sortGrid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); } }
-  .scard { border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 5px; display: flex; flex-direction: column; gap: 4px; content-visibility: auto; contain-intrinsic-size: 190px 220px; min-width: 0; }
+  .scard { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 2px; display: flex; flex-direction: column; gap: 3px; content-visibility: auto; contain-intrinsic-size: 190px 220px; min-width: 0; }
   .scard.saving { opacity: .45; pointer-events: none; }
-  .scard .thumb, .scard .sph { width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 8px; }
+  .scard .thumb, .scard .sph { width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 4px; border-color: transparent; }
   .scard .sph { background: #f3efe9; color: var(--sub, #888); display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; border: 1px dashed var(--line); }
   .scard .sm { font-size: 12px; font-weight: 700; word-break: break-all; }
   .scard .ss { font-size: 10.5px; color: var(--sub, #777); line-height: 1.4; word-break: break-all; }
@@ -239,7 +239,7 @@
           <select id="sBrand"><option value="">모든 브랜드</option></select>
           <label class="sopt"><input type="checkbox" id="sNoPhoto" checked> 사진 없는 것도 보기</label>
           <label class="sopt"><input type="checkbox" id="sHold"> 보류한 것도 보기</label>
-          <select id="sCols" title="한 줄에 보여 줄 개수 (적을수록 사진이 커집니다)" style="flex:0 0 auto"><option value="10">한 줄 10개</option><option value="8">한 줄 8개</option><option value="6" selected>한 줄 6개</option><option value="5">한 줄 5개</option><option value="4">한 줄 4개</option></select>
+          <select id="sCols" title="한 줄에 보여 줄 개수 (적을수록 사진이 커집니다)" style="flex:0 0 auto"><option value="10" selected>한 줄 10개</option><option value="8">한 줄 8개</option><option value="6">한 줄 6개</option><option value="5">한 줄 5개</option><option value="4">한 줄 4개</option></select>
           <button type="button" id="sUndo" disabled>방금 한 것 취소</button>
         </div>
         <div class="meta" id="sortMeta">불러오는 중…</div>
@@ -524,8 +524,8 @@ $("sUndo").addEventListener("click", async () => {
 });
 ["sBrand", "sNoPhoto", "sHold"].forEach(id => $(id).addEventListener("change", renderSort));
 // 한 줄에 보여 줄 개수 (사진 크기): 고른 값은 이 브라우저에 기억
-function sortCols() { const n = +$("sCols").value || 6; $("sortGrid").style.setProperty("--scols", n); store("checkSortCols2", String(n)); }
-{ const v = load("checkSortCols2"); if (v && [...$("sCols").options].some(o => o.value === v)) $("sCols").value = v; sortCols(); }
+function sortCols() { const n = +$("sCols").value || 10; $("sortGrid").style.setProperty("--scols", n); store("checkSortCols3", String(n)); }
+{ const v = load("checkSortCols3"); if (v && [...$("sCols").options].some(o => o.value === v)) $("sCols").value = v; sortCols(); }
 $("sCols").addEventListener("change", sortCols);
 function dbFiltered() {
   const q = norm($("dq").value), reg = $("dReg").value, rv = $("dRv").value, b = $("dBrand").value, t = $("dType").value;
