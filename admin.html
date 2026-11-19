@@ -473,7 +473,7 @@ function sortList() {
   const b = $("sBrand").value, tp = $("sType").value, np = $("sNoPhoto").checked, hd = $("sHold").checked;
   regSet = new Set(rows.map(r => norm(r.model)));
   try {
-    return db.filter(x => !sortBusyIds.has(x[0]) && !dbReg(x) && x[11] !== "제외" && (!b || x[1] === b) && (!tp || typeGroup(x[3]) === tp) && (np || x[14]) && (hd || x[11] !== "보류"))
+    return db.filter(x => !sortBusyIds.has(x[0]) && !sortHidden.has(x[0]) && !dbReg(x) && x[11] !== "제외" && (!b || x[1] === b) && (!tp || typeGroup(x[3]) === tp) && (np || x[14]) && (hd || x[11] !== "보류"))
       .sort((p, q) => ((p[11] === "보류") - (q[11] === "보류")) || (!p[14] - !q[14]) || String(p[1]).localeCompare(String(q[1]), "ko") || String(p[2]).localeCompare(String(q[2])));
   } finally { regSet = null; }
 }
@@ -508,7 +508,7 @@ async function sortBrand(x) {   // 등록된 브랜드 이름. 없으면 관리�
   return dbBrand(x[1]) || en;
 }
 // 누른 카드는 바로 치우고, 저장은 모아서 한 번에 보낸다 (한 건씩 보내면 4~5초씩 걸려 밀린다)
-const sortWait = [], sortBusyIds = new Set();
+const sortWait = [], sortBusyIds = new Set(), sortHidden = new Set();   // sortHidden: 이미 다른 사람이 등록해 둔 것 (새로고침 전까지 숨김)
 let sortBusy = false;
 function sortFail(j, why) {
   sortBusyIds.delete(j.x[0]); sortPending--;
@@ -532,9 +532,10 @@ async function sortFlush() {
       let r = null; try { r = await post({ action: "sinkSortBatch", items }); } catch (err) { r = { status: err && err.name === "AbortError" ? "slow" : "fail" }; }
       if (r && r.status === "unauth") { unauth(); jobs.forEach(j => sortFail(j, "로그인이 필요합니다.")); continue; }
       const why = { exists: "이미 등록돼 있습니다 (다른 분이 먼저 했을 수 있어요)", nobrand: "등록되지 않은 브랜드입니다", moved: "시트 줄이 바뀌었습니다. 새로고침해 주세요", bad: "저장하지 못했습니다" };
-      let okN = 0;
+      let okN = 0, skipN = 0;
       jobs.forEach((j, i) => {
         const s = r && r.status === "ok" && r.res ? r.res[i] : (r && r.status === "slow" ? "slow" : r && r.status === "busy" ? "busy" : "fail");
+        if (s === "exists") { skipN++; sortBusyIds.delete(j.x[0]); sortHidden.add(j.x[0]); sortPending--; j.card.remove(); return; }   // 이미 등록돼 있음(다른 분이 먼저 함): 실패가 아니라 건너뜀
         if (s !== "ok") return sortFail(j, s === "slow" ? "서버 응답이 너무 늦습니다. 저장됐는지 새로고침해서 확인해 주세요" : s === "busy" ? "다른 저장이 진행 중입니다. 잠시 뒤 다시 눌러 주세요" : (why[s] || "저장하지 못했습니다. 다시 눌러 주세요"));
         okN++; sortBusyIds.delete(j.x[0]); sortPending--;
         if (j.act === "t") { sortUndo.push({ act: "t", x: j.x, prev: j.prev }); j.x[11] = "보류"; }
@@ -544,7 +545,8 @@ async function sortFlush() {
         }
         j.card.remove();
       });
-      if (okN) { toast(`${okN}개 저장됨`); refreshBrands(); renderList(); }
+      if (okN || skipN) { toast(`${okN}개 저장됨` + (skipN ? ` · 이미 등록돼 있어 건너뜀 ${skipN}개` : "")); }
+      if (okN) { refreshBrands(); renderList(); }
       sortMeta();
     }
   } finally { sortBusy = false; sortMeta(); }
@@ -557,6 +559,18 @@ $("sortGrid").addEventListener("click", e => {
   card.classList.add("saving", "gone"); sortBusyIds.add(x[0]); sortPending++; sortMeta();
   sortWait.push({ card, x, act, prev: x[11] }); sortFlush();
 });
+// 다른 분(대표님 등)이 등록한 것이 내 화면에도 사라지도록 45초마다 등록 목록을 새로 받아 온다 (분류 탭을 보고 있고 저장 중이 아닐 때만)
+setInterval(async () => {
+  if ($("tab-sort").hidden || document.hidden || sortBusy || sortPending || !db || !token) return;
+  try {
+    const r = await call(GAS_URL + "?sink=admin&token=" + encodeURIComponent(token));
+    if (!r || r.status !== "ok" || sortBusy || sortPending) return;
+    rows.length = 0; (r.rows || []).forEach(z => rows.push(z)); setBrands(r.brands);
+    regSet = new Set(rows.map(z => norm(z.model)));
+    try { [...$("sortGrid").querySelectorAll(".scard")].forEach(c => { const x = db.find(z => z[0] === +c.dataset.dr); if (x && dbReg(x)) c.remove(); }); } finally { regSet = null; }
+    sortMeta(); refreshBrands(); renderList();
+  } catch (e) {}
+}, 45000);
 $("sortErr").addEventListener("click", e => { if (e.target.closest("button")) { sortFails.length = 0; sortFailShow(); } });
 $("sUndo").addEventListener("click", async () => {
   const u = sortUndo[sortUndo.length - 1]; if (!u) return;
