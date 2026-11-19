@@ -246,6 +246,7 @@
           <button type="button" id="sUndo" disabled>방금 한 것 취소</button>
         </div>
         <div class="meta" id="sortMeta">불러오는 중…</div>
+        <div id="sortErr" hidden style="margin:4px 0;padding:8px 10px;border:1px solid #e5a9a2;background:#fbe7e4;color:#a02a1c;border-radius:8px;font-size:13px;line-height:1.6"></div>
         <div id="sortGrid"></div>
       </div>
     </section>
@@ -462,7 +463,12 @@ $("dbCsv").addEventListener("click", () => {
 /* ── 사진 분류 ── 아직 등록 안 한 사이즈 DB 줄을 사진 카드로 늘어놓고, 카드 아래 드롭박스로 바로 나눈다.
  *   ○ 설치 가능 = 상태 "가능"으로 등록 · △ 보류 = 사이즈 DB 검토 "보류" · ✕ 설치 불가 = 상태 "불가"로 등록
  * 고르면 바로 저장되고 카드가 사라진다. [방금 한 것 취소]로 한 단계씩 되돌린다. */
-const sortUndo = [];
+const sortUndo = [], sortFails = [];
+let sortQ = Promise.resolve(), sortPending = 0;
+function sortFailShow() {   // 저장 실패는 알림이 사라져도 남아 있게 화면에 적어 둔다
+  const el = $("sortErr"); el.hidden = !sortFails.length;
+  el.innerHTML = sortFails.map(f => esc(f)).join("<br>") + ` <button type="button">지우기</button>`;
+}
 function sortList() {
   const b = $("sBrand").value, tp = $("sType").value, np = $("sNoPhoto").checked, hd = $("sHold").checked;
   regSet = new Set(rows.map(r => norm(r.model)));
@@ -480,7 +486,7 @@ function sortCard(x) {
 }
 function sortMeta() {
   const cards = [...$("sortGrid").querySelectorAll(".scard:not(.gone)")], withPhoto = cards.filter(c => c.querySelector(".thumb")).length;
-  $("sortMeta").textContent = `분류할 것 ${cards.length}개 (사진 있음 ${withPhoto} · 사진 없음 ${cards.length - withPhoto})`;
+  $("sortMeta").textContent = `분류할 것 ${cards.length}개 (사진 있음 ${withPhoto} · 사진 없음 ${cards.length - withPhoto})` + (sortPending ? ` · 저장 중 ${sortPending}개` : "");
   $("sUndo").disabled = !sortUndo.length;
 }
 function renderSort() {
@@ -525,16 +531,25 @@ $("sortGrid").addEventListener("click", async e => {
   const card = btn.closest(".scard"), x = db.find(r => r[0] === +card.dataset.dr), act = btn.dataset.act;
   if (!x || card.classList.contains("saving")) return;
   // 누르는 순간 카드를 치우고(저장은 뒤에서 진행), 저장이 안 되면 같은 자리에 다시 보여 준다
-  card.classList.add("saving", "gone"); sortMeta();
+  card.classList.add("saving", "gone"); sortPending++; sortMeta();
   const back = () => { card.classList.remove("saving", "gone"); sortMeta(); };
-  try {
-    const res = await sortApply(x, act);
-    if (res === "same") { back(); toast(`${x[2]} 은(는) 이미 보류입니다`); return; }
-    toast(`${x[2]} → ${act === "o" ? "설치 가능으로 등록" : act === "t" ? "보류" : "설치 불가로 등록"} (저장됨)`);
-    card.remove(); sortMeta();
-    if (act !== "t") { refreshBrands(); renderList(); }
-  } catch (err) { back(); toast((x[2]) + ": " + (err && err.message ? err.message : "저장하지 못했습니다. 다시 눌러 주세요.")); }
+  // 저장은 한 번에 하나씩 순서대로 (여러 개를 빠르게 눌러도 서버가 바쁘다고 거절하지 않게)
+  sortQ = sortQ.then(async () => {
+    try {
+      const res = await sortApply(x, act);
+      if (res === "same") { back(); toast(`${x[2]} 은(는) 이미 보류입니다`); return; }
+      toast(`${x[2]} → ${act === "o" ? "설치 가능으로 등록" : act === "t" ? "보류" : "설치 불가로 등록"} (저장됨)`);
+      card.remove();
+      if (act !== "t") { refreshBrands(); renderList(); }
+    } catch (err) {
+      back();
+      const why = err && err.name === "AbortError" ? "서버 응답이 너무 늦습니다. 저장됐는지 새로고침해서 확인해 주세요." : (err && err.message ? err.message : "저장하지 못했습니다. 다시 눌러 주세요.");
+      sortFails.unshift(`${x[2]} (${act === "o" ? "○" : act === "t" ? "△" : "✕"}): ${why}`); sortFails.length = Math.min(sortFails.length, 5); sortFailShow();
+      toast(x[2] + ": " + why);
+    } finally { sortPending--; sortMeta(); }
+  });
 });
+$("sortErr").addEventListener("click", e => { if (e.target.closest("button")) { sortFails.length = 0; sortFailShow(); } });
 $("sUndo").addEventListener("click", async () => {
   const u = sortUndo[sortUndo.length - 1]; if (!u) return;
   $("sUndo").disabled = true;
