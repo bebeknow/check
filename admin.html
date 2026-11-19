@@ -475,7 +475,7 @@ function sortCard(x) {
   const dims = [x[4], x[5], x[6]].some(Boolean) ? `${x[4] || "-"}×${x[5] || "-"}×${x[6] || "-"}mm` : "치수 -";
   const ph = x[14] ? thumb(x[14]) : "";
   return `<div class="scard" data-dr="${x[0]}">${ph || `<div class="sph">사진 없음</div>`}
-    <div><div class="sm">${esc(x[2])}</div><div class="ss">${esc(x[1])}<br>${esc(x[3] || "유형 -")} · ${dims}${x[8] ? " · 림 " + esc(x[8]) : ""}</div>${x[11] === "보류" ? `<div class="shold">보류 표시됨</div>` : ""}</div>
+    <div><div class="sm">${esc(x[2])}</div><div class="ss">${esc(x[1])}<br>${esc(x[3] || "형태 미상")} · ${dims}${x[8] ? " · 림 " + esc(x[8]) : ""}</div>${x[11] === "보류" ? `<div class="shold">보류 표시됨</div>` : ""}</div>
     <div class="sbtns"><button type="button" class="so" data-act="o" title="설치 가능 (등록)" aria-label="설치 가능으로 등록">○</button><button type="button" class="st" data-act="t" title="보류" aria-label="보류">△</button><button type="button" class="sx" data-act="x" title="설치 불가 (등록)" aria-label="설치 불가로 등록">✕</button></div></div>`;
 }
 function sortMeta() {
@@ -619,7 +619,7 @@ function keepFetch() {
 function dbRowHtml(x) {
   const isReg = dbReg(x), mm = v => v ? esc(v) : "-";
   return `<div class="req" data-dr="${x[0]}">
-    ${thumb(x[14])}<div><span class="badge ${isReg ? "k-reg" : "k-no"}">${isReg ? "등록됨" : "미등록"}</span> <b>${esc(x[2])}</b> <span class="sub">${esc(x[1])} · ${esc(x[3] || "유형 -")}</span></div>
+    ${thumb(x[14])}<div><span class="badge ${isReg ? "k-reg" : "k-no"}">${isReg ? "등록됨" : "미등록"}</span> <b>${esc(x[2])}</b> <span class="sub">${esc(x[1])} · ${esc(x[3] || "형태 미상")}</span></div>
     <div class="sub">가로 ${mm(x[4])} · 깊이 ${mm(x[5])} · 높이 ${mm(x[6])} · 림두께 ${mm(x[8])}${x[7] ? " · 볼 " + esc(x[7]) : ""}${x[9] ? " · 수전홀 " + esc(x[9]) : ""}${x[10] ? "<br>" + esc(x[10]) : ""}</div>
     <div class="acts dacts"><span class="dsrc">${/^https?:\/\//.test(x[13] || "") ? `<a href="${esc(x[13])}" target="_blank" rel="noopener noreferrer">제품 정보 ↗ (직접)</a>` : dbSrc(x[12])}</span><span class="seg rv dseg">${/^https?:\/\//.test(x[13] || "") || dbSrc(x[12]).startsWith("<a") ? "" :`<button type="button" data-dlink>링크</button>`}${isReg ? "" : `<button type="button" data-dreg>등록하기</button>${["보류", "제외"].map(v => `<button type="button" data-rv="${v}" class="${x[11] === v ? "on" : ""}">${v}</button>`).join("")}`}</span></div>
     <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 지움)" value="${esc(x[13] || "")}"><button type="button" data-dlsave>저장</button><button type="button" data-dlcancel>취소</button></div>
@@ -840,7 +840,7 @@ function whenTxt(r) {
 }
 function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
-    <div class="mcell">${thumb(r.photo)}<div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}${r.type ? " · " + esc(typeGroup(r.type)) : ""}</div></div></div>
+    <div class="mcell">${thumb(r.photo)}<div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}${" · " + esc(typeGroup(r.type))}</div></div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
     <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
     <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 직접 링크 지움)" value="${esc(r.mylink || "")}"><button type="button" data-lsave>저장</button><button type="button" data-lcancel>취소</button></div>
@@ -979,7 +979,7 @@ function sizeBox(q, s0) {
   const s = s0 !== undefined ? s0 : sizes[norm(q)]; if (!s) return `<div class="size nz">사이즈 DB에 없는 품번입니다</div>`;
   const mm = v => v ? esc(v) : "-";
   return `<div class="size"><b>사이즈 DB (mm)${s.exact ? "" : " · 비슷한 품번"}</b>` + s.rows.map(x =>
-    `<div>${esc(x[0])} <b>${esc(x[1])}</b> · ${esc(x[2] || "유형 -")}<br>가로 ${mm(x[3])} · 깊이 ${mm(x[4])} · 높이 ${mm(x[5])} · 림두께 ${mm(x[7])}${x[6] ? " · 볼 " + esc(x[6]) : ""}${x[8] ? " · 수전홀 " + esc(x[8]) : ""}${x[9] ? "<br>" + esc(x[9]) : ""}</div>`).join("") + `</div>`;
+    `<div>${esc(x[0])} <b>${esc(x[1])}</b> · ${esc(x[2] || "형태 미상")}<br>가로 ${mm(x[3])} · 깊이 ${mm(x[4])} · 높이 ${mm(x[5])} · 림두께 ${mm(x[7])}${x[6] ? " · 볼 " + esc(x[6]) : ""}${x[8] ? " · 수전홀 " + esc(x[8]) : ""}${x[9] ? "<br>" + esc(x[9]) : ""}</div>`).join("") + `</div>`;
 }
 function renderReqs() {
   const k = $("rk").value, open = $("rd").value === "open";
