@@ -110,6 +110,7 @@
   .sbtns .st { color: #b26a00; border-color: #e6c58a; } .sbtns .st:hover { background: #fdf1dc; }
   .sbtns .sx { color: #c0392b; border-color: #e5a9a2; } .sbtns .sx:hover { background: #fbe7e4; }
   .scard .shold { font-size: 11px; color: #a25a00; }
+  .scard .ssim { font-size: 11px; color: #0b6b8a; margin-top: 2px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
   /* 휴대폰: 탭은 3칸씩 두 줄, 제목 줄은 위아래로, 목록 정렬 칸은 한 줄 전체 */
   @media (max-width: 560px) {
@@ -472,16 +473,26 @@ function sortFailShow() {   // 저장 실패는 알림이 사라져도 남아 �
 function sortList() {
   const b = $("sBrand").value, tp = $("sType").value, np = $("sNoPhoto").checked, hd = $("sHold").checked;
   regSet = new Set(rows.map(r => norm(r.model)));
+  sortSim = rows.map(r => [norm(r.model), r.model, r.st]).filter(a => a[0].length >= 4);   // 비슷한 품번 표시용
   try {
     return db.filter(x => !sortBusyIds.has(x[0]) && !sortHidden.has(x[0]) && !dbReg(x) && x[11] !== "제외" && (!b || x[1] === b) && (!tp || typeGroup(x[3]) === tp) && (np || x[14]) && (hd || x[11] !== "보류"))
       .sort((p, q) => ((p[11] === "보류") - (q[11] === "보류")) || (!p[14] - !q[14]) || String(p[1]).localeCompare(String(q[1]), "ko") || String(p[2]).localeCompare(String(q[2])));
   } finally { regSet = null; }
 }
+let sortSim = [];
+// 이미 등록된 품번 중 앞부분이 같고 끝 글자만 1~3자 다른 것 (예: L-902 ↔ L-902D) → 카드에 "등록됨" 배지
+function sortSimilar(x) {
+  const k = norm(x[2]); if (k.length < 4) return "";
+  const hit = sortSim.find(a => a[0] !== k && (k.startsWith(a[0]) ? k.length - a[0].length : a[0].startsWith(k) ? a[0].length - k.length : 9) <= 3);
+  if (!hit) return "";
+  const lb = hit[2] === 0 ? "가능" : hit[2] === 2 ? "불가" : "";
+  return `<div class="ssim" title="이미 등록된 비슷한 품번">비슷한 등록: ${esc(hit[1])}${lb ? " (" + lb + ")" : ""}</div>`;
+}
 function sortCard(x) {
   const dims = [x[4], x[5], x[6]].some(Boolean) ? `${x[4] || "-"}×${x[5] || "-"}×${x[6] || "-"}mm` : "치수 -";
   const ph = x[14] ? thumb(x[14]) : "";
   return `<div class="scard" data-dr="${x[0]}">${ph || `<div class="sph">사진 없음</div>`}
-    <div><div class="sm">${esc(x[2])}</div><div class="ss">${esc(x[1])}<br>${esc(x[3] || "형태 미상")} · ${dims}${x[8] ? " · 림 " + esc(x[8]) : ""}</div>${x[11] === "보류" ? `<div class="shold">보류 표시됨</div>` : ""}</div>
+    <div><div class="sm">${esc(x[2])}</div><div class="ss">${esc(x[1])}<br>${esc(x[3] || "형태 미상")} · ${dims}${x[8] ? " · 림 " + esc(x[8]) : ""}</div>${x[11] === "보류" ? `<div class="shold">보류 표시됨</div>` : ""}${sortSimilar(x)}</div>
     <div class="sbtns"><button type="button" class="so" data-act="o" title="설치 가능 (등록)" aria-label="설치 가능으로 등록">○</button><button type="button" class="st" data-act="t" title="보류" aria-label="보류">△</button><button type="button" class="sx" data-act="x" title="설치 불가 (등록)" aria-label="설치 불가로 등록">✕</button></div></div>`;
 }
 function sortMeta() {
