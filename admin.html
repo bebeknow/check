@@ -109,6 +109,7 @@
   .sbtns .so { color: #1a7f3c; border-color: #9fd3b0; } .sbtns .so:hover { background: #e5f5ea; }
   .sbtns .st { color: #b26a00; border-color: #e6c58a; } .sbtns .st:hover { background: #fdf1dc; }
   .sbtns .sx { color: #c0392b; border-color: #e5a9a2; } .sbtns .sx:hover { background: #fbe7e4; }
+  .scard .snote { width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 5px; border: 1px solid var(--line); border-radius: 6px; }
   .scard .shold { font-size: 11px; color: #a25a00; }
   .scard .ssim { font-size: 11px; color: #0b6b8a; margin-top: 2px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
@@ -481,6 +482,7 @@ function sortList() {
   } finally { regSet = null; }
 }
 let sortSim = [];
+const sortNotes = new Map();   // 카드에 적어 둔 고객 안내 (화면을 다시 그려도 남도록)
 // 이미 등록된 품번 중 앞부분이 같고 끝 글자만 1~3자 다른 것 (예: L-902 ↔ L-902D) → 카드에 "등록됨" 배지
 function sortSimilar(x) {
   const k = norm(x[2]); if (k.length < 4) return "";
@@ -494,6 +496,7 @@ function sortCard(x) {
   const ph = x[14] ? thumb(x[14]) : "";
   return `<div class="scard" data-dr="${x[0]}">${ph || `<div class="sph">사진 없음</div>`}
     <div><div class="sm">${esc(x[2])}</div><div class="ss">${esc(x[1])}<br>${esc(x[3] || "형태 미상")} · ${dims}${x[8] ? " · 림 " + esc(x[8]) : ""}</div>${x[11] === "보류" ? `<div class="shold">보류 표시됨</div>` : ""}${sortSimilar(x)}</div>
+    <input class="snote" maxlength="200" placeholder="고객 안내 (선택)" value="${esc(sortNotes.get(x[0]) || "")}" aria-label="고객 안내 (선택)">
     <div class="sbtns"><button type="button" class="so" data-act="o" title="설치 가능 (등록)" aria-label="설치 가능으로 등록">○</button><button type="button" class="st" data-act="t" title="보류" aria-label="보류">△</button><button type="button" class="sx" data-act="x" title="설치 불가 (등록)" aria-label="설치 불가로 등록">✕</button></div></div>`;
 }
 function sortMeta() {
@@ -534,8 +537,8 @@ async function sortFlush() {
       const batch = sortWait.splice(0, 30), jobs = [], items = [];
       for (const j of batch) {
         try {
-          if (j.act === "t") items.push({ kind: "review", row: j.x[0], model: j.x[2], review: "보류" });
-          else { j.brand = await sortBrand(j.x); j.st = j.act === "o" ? 0 : 2; j.memo = sortMemo(j.x); items.push({ kind: "save", brand: j.brand, model: j.x[2], st: j.st, memo: j.memo }); }
+          if (j.act === "t" && !j.note) items.push({ kind: "review", row: j.x[0], model: j.x[2], review: "보류" });
+          else { j.brand = await sortBrand(j.x); j.st = j.act === "o" ? 0 : j.act === "t" ? 1 : 2; j.memo = sortMemo(j.x); j.reg = true; items.push({ kind: "save", brand: j.brand, model: j.x[2], st: j.st, memo: j.memo, note: j.note || "" }); }   // △ + 안내 = "확인 필요"로 등록해야 고객에게 보임
           jobs.push(j);
         } catch (err) { sortFail(j, err && err.message ? err.message : "저장하지 못했습니다."); }
       }
@@ -550,9 +553,9 @@ async function sortFlush() {
         if (s === "exists") { skipN++; sortBusyIds.delete(j.x[0]); sortHidden.add(j.x[0]); sortPending--; j.card.remove(); return; }   // 이미 등록돼 있음(다른 분이 먼저 함): 실패가 아니라 건너뜀
         if (s !== "ok") return sortFail(j, s === "slow" ? "서버 응답이 너무 늦습니다. 저장됐는지 새로고침해서 확인해 주세요" : s === "busy" ? "다른 저장이 진행 중입니다. 잠시 뒤 다시 눌러 주세요" : (why[s] || "저장하지 못했습니다. 다시 눌러 주세요"));
         okN++; sortBusyIds.delete(j.x[0]); sortPending--;
-        if (j.act === "t") { sortUndo.push({ act: "t", x: j.x, prev: j.prev }); j.x[11] = "보류"; }
+        if (!j.reg) { sortUndo.push({ act: "t", x: j.x, prev: j.prev }); j.x[11] = "보류"; }
         else {
-          rows.unshift({ brand: j.brand, model: j.x[2], st: j.st, memo: j.memo, at: "방금", by: me ? me.name : "", mylink: "", link: "", auto: false, photo: j.x[14] || "", type: j.x[3] || "" });
+          rows.unshift({ brand: j.brand, model: j.x[2], st: j.st, memo: j.memo, note: j.note || "", at: "방금", by: me ? me.name : "", mylink: "", link: "", auto: false, photo: j.x[14] || "", type: j.x[3] || "" });
           sortUndo.push({ act: j.act, x: j.x, brand: j.brand, model: j.x[2] });
         }
         j.card.remove();
@@ -567,9 +570,10 @@ $("sortGrid").addEventListener("click", e => {
   const btn = e.target.closest(".sbtns button"); if (!btn) return;
   const card = btn.closest(".scard"), x = db.find(r => r[0] === +card.dataset.dr), act = btn.dataset.act;
   if (!x || card.classList.contains("saving")) return;
-  if (act === "t" && x[11] === "보류") { toast(`${x[2]} 은(는) 이미 보류입니다`); return; }
+  if (act === "t" && x[11] === "보류" && !((card.querySelector(".snote") || {}).value || "").trim()) { toast(`${x[2]} 은(는) 이미 보류입니다`); return; }
   card.classList.add("saving", "gone"); sortBusyIds.add(x[0]); sortPending++; sortMeta();
-  sortWait.push({ card, x, act, prev: x[11] }); sortFlush();
+  const note = (card.querySelector(".snote") || {}).value; sortNotes.delete(x[0]);
+  sortWait.push({ card, x, act, prev: x[11], note: String(note || "").trim() }); sortFlush();
 });
 // 다른 분(대표님 등)이 등록한 것이 내 화면에도 사라지도록 45초마다 등록 목록을 새로 받아 온다 (분류 탭을 보고 있고 저장 중이 아닐 때만)
 setInterval(async () => {
@@ -583,6 +587,7 @@ setInterval(async () => {
     sortMeta(); refreshBrands(); renderList();
   } catch (e) {}
 }, 45000);
+$("sortGrid").addEventListener("input", e => { const t = e.target.closest(".snote"); if (!t) return; const id = +t.closest(".scard").dataset.dr; if (t.value) sortNotes.set(id, t.value); else sortNotes.delete(id); });
 $("sortErr").addEventListener("click", e => { if (e.target.closest("button")) { sortFails.length = 0; sortFailShow(); } });
 $("sUndo").addEventListener("click", async () => {
   const u = sortUndo[sortUndo.length - 1]; if (!u) return;
