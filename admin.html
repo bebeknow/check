@@ -32,7 +32,7 @@
   .seg button.on.s1 { background: var(--chk-bg); color: var(--chk); font-weight: 700; }
   .seg button.on.s2 { background: var(--no-bg); color: var(--no); font-weight: 700; }
   .filters { display: grid; grid-template-columns: 1fr 140px 120px; gap: 8px; margin-bottom: 8px; }
-  .lf { grid-template-columns: 1fr 1fr 1fr; }
+  .lf { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .lf input { grid-column: 1 / -1; }
   .meta { font-size: 13px; color: var(--ink2); margin: 6px 2px 10px; }
   .row { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -196,6 +196,7 @@
         <div class="filters lf">
           <input id="fq" type="search" placeholder="품번·브랜드 찾기">
           <select id="fb"><option value="">모든 브랜드</option></select>
+          <select id="fT" title="세면대 형태"><option value="">모든 형태</option></select>
           <select id="fs"><option value="">모든 상태</option><option value="0">가능</option><option value="1">확인 필요</option><option value="2">불가</option></select>
           <select id="fo"><option value="">기본 순서</option><option value="recent">최근 수정순</option></select>
         </div>
@@ -238,6 +239,7 @@
       <div class="card">
         <div class="filters sortf">
           <select id="sBrand"><option value="">모든 브랜드</option></select>
+          <select id="sType" title="세면대 형태"><option value="">모든 형태</option></select>
           <label class="sopt"><input type="checkbox" id="sNoPhoto" checked> 사진 없는 것도 보기</label>
           <label class="sopt"><input type="checkbox" id="sHold"> 보류한 것도 보기</label>
           <select id="sCols" title="한 줄에 보여 줄 개수 (적을수록 사진이 커집니다)" style="flex:0 0 auto"><option value="10" selected>한 줄 10개</option><option value="8">한 줄 8개</option><option value="6">한 줄 6개</option><option value="5">한 줄 5개</option><option value="4">한 줄 4개</option></select>
@@ -402,6 +404,31 @@ function showTab(t) { $("mainTabs").querySelector(`[data-tab="${t}"]`).click(); 
 
 /* ── 사이즈 DB ── 등록 여부는 세면대 목록(rows)과 품번을 맞춰서 바로 계산 */
 let db = null, dbBusy = false, regSet = null;
+/* 세면대 형태: 사이즈 DB 유형 글자가 100가지가 넘게 제각각이라, 같은 형태끼리 묶어서 필터에 쓴다 (원래 글자는 그대로 둠) */
+const TYPE_ORDER = ["반다리형", "긴다리·스탠딩형", "벽걸이형", "평면붙임형", "콘솔형", "언더카운터형", "탑카운터형", "탑볼형", "하부장·서랍장형", "일체형", "코너형", "퍼블릭 싱크", "형태 미상"];
+function typeGroup(t) {
+  t = String(t || "").replace(/\s+/g, " ").trim(); if (!t) return "형태 미상";
+  if (/하부장|서랍장/.test(t)) return "하부장·서랍장형";
+  if (/콘솔/.test(t)) return "콘솔형";
+  if (/언더/.test(t)) return "언더카운터형";
+  if (/반다리/.test(t)) return "반다리형";
+  if (/긴다리|페데스탈|스탠딩|스탠드/.test(t)) return "긴다리·스탠딩형";
+  if (/벽걸이|벽붙임/.test(t)) return "벽걸이형";
+  if (/평면 ?붙임/.test(t)) return "평면붙임형";
+  if (/코너|구석/.test(t)) return "코너형";
+  if (/퍼블릭|공용/.test(t)) return "퍼블릭 싱크";
+  if (/일체형/.test(t)) return "일체형";
+  if (/탑볼|독립|유리볼/.test(t)) return "탑볼형";
+  if (/카운터|세미|반걸침|매립/.test(t)) return "탑카운터형";
+  if (/원형|라운드|큐브|타원|사각/.test(t)) return "탑볼형";
+  return "형태 미상";
+}
+// 형태 고르는 칸 채우기: 있는 형태만, 정해 둔 순서대로, 개수와 함께
+function typeOpts(selId, groups, first) {
+  const el = $(selId), cur = el.value, c = {}; groups.forEach(g => c[g] = (c[g] || 0) + 1);
+  el.innerHTML = `<option value="">${first || "모든 형태"}</option>` + TYPE_ORDER.filter(g => c[g]).map(g => `<option value="${esc(g)}">${esc(g)} (${c[g]})</option>`).join("");
+  el.value = c[cur] ? cur : "";
+}
 const dbKeys = m => { const k = [norm(m)]; String(m).split(/[\s()\/+]+/).forEach(t => { t = norm(t); if (t.length >= 4 && /[A-Z]/.test(t) && /\d/.test(t) && !k.includes(t)) k.push(t); }); return k; };
 // 전체 목록을 한 번에 그리므로, 그리는 동안에는 등록 품번 모음을 한 번만 만든다
 function dbReg(x) { const set = regSet || new Set(rows.map(r => norm(r.model))); return dbKeys(x[2]).some(k => set.has(k)); }
@@ -415,7 +442,7 @@ function loadDb(force) {
     const opt = (id, first, vals) => { $(id).innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join(""); };
     const cnt = k => { const c = {}; db.forEach(r => { const v = k(r); if (v) c[v] = (c[v] || 0) + 1; }); return Object.keys(c).sort((a, b) => c[b] - c[a]); };
     opt("dBrand", "모든 브랜드", cnt(r => r[1]));
-    opt("dType", "모든 유형", cnt(r => String(r[3]).split(/[(/]/)[0].trim()));
+    typeOpts("dType", db.map(r => typeGroup(r[3]))); typeOpts("sType", db.map(r => typeGroup(r[3])));
     opt("sBrand", "모든 브랜드", cnt(r => r[1]));
     renderDb(); if (!$("tab-sort").hidden) renderSort();
   }).catch(() => { $("dbMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; $("sortMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; }).finally(() => { dbBusy = false; });
@@ -437,10 +464,10 @@ $("dbCsv").addEventListener("click", () => {
  * 고르면 바로 저장되고 카드가 사라진다. [방금 한 것 취소]로 한 단계씩 되돌린다. */
 const sortUndo = [];
 function sortList() {
-  const b = $("sBrand").value, np = $("sNoPhoto").checked, hd = $("sHold").checked;
+  const b = $("sBrand").value, tp = $("sType").value, np = $("sNoPhoto").checked, hd = $("sHold").checked;
   regSet = new Set(rows.map(r => norm(r.model)));
   try {
-    return db.filter(x => !dbReg(x) && x[11] !== "제외" && (!b || x[1] === b) && (np || x[14]) && (hd || x[11] !== "보류"))
+    return db.filter(x => !dbReg(x) && x[11] !== "제외" && (!b || x[1] === b) && (!tp || typeGroup(x[3]) === tp) && (np || x[14]) && (hd || x[11] !== "보류"))
       .sort((p, q) => ((p[11] === "보류") - (q[11] === "보류")) || (!p[14] - !q[14]) || String(p[1]).localeCompare(String(q[1]), "ko") || String(p[2]).localeCompare(String(q[2])));
   } finally { regSet = null; }
 }
@@ -490,7 +517,7 @@ async function sortApply(x, act) {
   if (r.status === "busy") throw new Error("다른 저장이 진행 중입니다. 잠시 뒤 다시 눌러 주세요.");
   if (r.status === "nobrand") throw new Error("등록되지 않은 브랜드입니다.");
   if (r.status !== "ok") throw new Error("저장하지 못했습니다. 다시 해 주세요.");
-  rows.unshift({ brand, model: x[2], st, memo, at: "방금", by: me ? me.name : "", mylink: "", link: "", auto: false, photo: x[14] || "" });
+  rows.unshift({ brand, model: x[2], st, memo, at: "방금", by: me ? me.name : "", mylink: "", link: "", auto: false, photo: x[14] || "", type: x[3] || "" });
   sortUndo.push({ act, x, brand, model: x[2] }); return "ok";
 }
 $("sortGrid").addEventListener("click", async e => {
@@ -526,7 +553,7 @@ $("sUndo").addEventListener("click", async () => {
   } catch (err) { toast("취소하지 못했습니다. 다시 눌러 주세요."); }
   renderSort();
 });
-["sBrand", "sNoPhoto", "sHold"].forEach(id => $(id).addEventListener("change", renderSort));
+["sBrand", "sType", "sNoPhoto", "sHold"].forEach(id => $(id).addEventListener("change", renderSort));
 // 한 줄에 보여 줄 개수 (사진 크기): 고른 값은 이 브라우저에 기억
 function sortCols() { const n = +$("sCols").value || 10; $("sortGrid").style.setProperty("--scols", n); store("checkSortCols3", String(n)); }
 { const v = load("checkSortCols3"); if (v && [...$("sCols").options].some(o => o.value === v)) $("sCols").value = v; sortCols(); }
@@ -541,7 +568,7 @@ function dbFiltered() {
     if (reg === "yes" && !isReg) return false;
     if (rv === "-" ? x[11] : rv && x[11] !== rv) return false;
     if (b && x[1] !== b) return false;
-    if (t && String(x[3]).split(/[(/]/)[0].trim() !== t) return false;
+    if (t && typeGroup(x[3]) !== t) return false;
     return !q || norm(x[2]).includes(q) || norm(x[1]).includes(q);
   }).sort((p, q2) => hold(p) - hold(q2));
 }
@@ -797,10 +824,11 @@ function refreshBrands() {
   const cur = $("fb").value;
   $("fb").innerHTML = `<option value="">모든 브랜드</option>` + bs.map(b => `<option value="${esc(b)}">${esc(BRAND[b] || b)}</option>`).join("");
   $("fb").value = bs.includes(cur) ? cur : "";
+  typeOpts("fT", rows.map(r => typeGroup(r.type)));
 }
 function filtered() {
-  const q = norm($("fq").value), b = $("fb").value, s = $("fs").value;
-  const list = rows.filter(r => (!b || r.brand === b) && (s === "" || r.st === +s) && (!q || norm(r.model).includes(q) || norm(ko(r.brand)).includes(q)));
+  const q = norm($("fq").value), b = $("fb").value, s = $("fs").value, t = $("fT").value;
+  const list = rows.filter(r => (!b || r.brand === b) && (!t || typeGroup(r.type) === t) && (s === "" || r.st === +s) && (!q || norm(r.model).includes(q) || norm(ko(r.brand)).includes(q)));
   // 최근 수정순: "방금" 고친 것이 맨 위, 그다음 수정일시 늦은 순
   if ($("fo").value === "recent") { const k = r => r.at === "방금" ? "9" : String(r.at || ""); return list.slice().sort((x, y) => k(y).localeCompare(k(x))); }
   return list;
@@ -812,7 +840,7 @@ function whenTxt(r) {
 }
 function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
-    <div class="mcell">${thumb(r.photo)}<div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}</div></div></div>
+    <div class="mcell">${thumb(r.photo)}<div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}${r.type ? " · " + esc(typeGroup(r.type)) : ""}</div></div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
     <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
     <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 직접 링크 지움)" value="${esc(r.mylink || "")}"><button type="button" data-lsave>저장</button><button type="button" data-lcancel>취소</button></div>
@@ -827,7 +855,7 @@ function renderList() {
   $("rows").innerHTML = list.map(r => rowHtml(r, at.get(r))).join("") || `<div class="sub">맞는 세면대가 없습니다.</div>`;
   keepScan();
 }
-["fq", "fb", "fs", "fo"].forEach(id => $(id).addEventListener("input", () => { addFormHome(); editEnd(); renderList(); }));
+["fq", "fb", "fT", "fs", "fo"].forEach(id => $(id).addEventListener("input", () => { addFormHome(); editEnd(); renderList(); }));
 
 $("rows").addEventListener("click", e => {
   const rowEl = e.target.closest(".row"); if (!rowEl) return;
@@ -917,7 +945,7 @@ $("addForm").addEventListener("submit", e => {
     const target = editing || same;
     const stamp = { at: "방금", by: me ? me.name : "", mylink: link };
     // 사이즈 DB 의 같은 브랜드·품번 사진을 바로 붙인다 (서버 목록을 다시 받기 전에도 사진이 보이게)
-    { const nb = norm(brand), nk = norm(ko(brand)), d = (db || []).find(x => x[14] && dbKeys(x[2]).includes(norm(model)) && (norm(x[1]).includes(nb) || (nk && norm(x[1]).includes(nk)))); if (d) stamp.photo = d[14]; }
+    { const nb = norm(brand), nk = norm(ko(brand)), same = x => dbKeys(x[2]).includes(norm(model)) && (norm(x[1]).includes(nb) || (nk && norm(x[1]).includes(nk))), d = (db || []).find(x => x[14] && same(x)), d2 = d || (db || []).find(same); if (d) stamp.photo = d[14]; if (d2 && d2[3]) stamp.type = d2[3]; }
     if (link) { stamp.link = link; stamp.auto = false; } else if (target && !target.auto) { stamp.link = ""; }
     if (target) Object.assign(target, { brand, model, st: addSt, memo }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo }, stamp));
     $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
