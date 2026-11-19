@@ -31,11 +31,12 @@ function post(body) {
 get({ sink: "brands" }).then(j => { if (j && Array.isArray(j.brands)) brands = j.brands; }).catch(() => {});
 
 // link: 서버가 주는 제조사 제품 상세 페이지 주소 (https 로 시작할 때만)
-function card([brandKo, model, st, link]) {
+function card([brandKo, model, st, link, note]) {
   const s = STATUS[st] || STATUS[1];
   return `<article class="item ${s.cls}">
     <div class="row"><div><div class="model">${esc(model)}</div><div class="brand">${esc(brandKo)}</div></div><span class="badge">${s.badge}</span></div>
     ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
+    ${note ? `<p class="note">${esc(note)}</p>` : ""}
     ${st === 0 ? buyBtn() : ""}
     ${/^https?:\/\//.test(link || "") ? `<a class="info" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(brandKo)} 제품 정보 보기 ↗</a>` : ""}
   </article>`;

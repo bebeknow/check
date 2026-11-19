@@ -50,6 +50,7 @@
   .chk .badge { background: var(--chk-bg); color: var(--chk); }
   .no .badge { background: #fdecea; color: #b3261e; }
   .msg { font-size: 14px; color: var(--ink2); margin: 8px 0 0; }
+  .note { font-size: 14px; color: #8a4b00; background: #fff4e0; border-radius: 10px; padding: 9px 11px; margin: 8px 0 0; line-height: 1.45; }
   .talk { display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; width: 100%; padding: 12px; border-radius: 12px; background: #03c75a; color: #fff; font-weight: 700; font-size: 15px; text-decoration: none; }
   .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 14px; padding: 18px 16px; text-align: center; }
   .empty b { display: block; font-size: 16px; margin-bottom: 4px; }
@@ -117,7 +118,7 @@
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
   </section>
 
-  <footer hidden>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트됩니다 · v2026.11.17-19</footer>
+  <footer hidden>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트됩니다 · v2026.11.19-1</footer>
 </div>
 
 
@@ -153,11 +154,12 @@ function post(body) {
 get({ sink: "brands" }).then(j => { if (j && Array.isArray(j.brands)) brands = j.brands; }).catch(() => {});
 
 // link: 서버가 주는 제조사 제품 상세 페이지 주소 (https 로 시작할 때만)
-function card([brandKo, model, st, link]) {
+function card([brandKo, model, st, link, note]) {
   const s = STATUS[st] || STATUS[1];
   return `<article class="item ${s.cls}">
     <div class="row"><div><div class="model">${esc(model)}</div><div class="brand">${esc(brandKo)}</div></div><span class="badge">${s.badge}</span></div>
     ${s.msg ? `<p class="msg">${s.msg}</p>` : ""}
+    ${note ? `<p class="note">${esc(note)}</p>` : ""}
     ${st === 0 ? buyBtn() : ""}
     ${/^https?:\/\//.test(link || "") ? `<a class="info" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${esc(brandKo)} 제품 정보 보기 ↗</a>` : ""}
   </article>`;

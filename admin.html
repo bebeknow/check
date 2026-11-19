@@ -186,6 +186,7 @@
             <button type="button" class="s0 on" data-st="0">가능</button><button type="button" class="s1" data-st="1">확인 필요</button><button type="button" class="s2" data-st="2">불가</button>
           </div>
         </div>
+        <label class="f" style="margin-top:10px">고객 안내 (고객 화면에 보임 · 선택)<input id="aNote" maxlength="200" placeholder="예: 수납장 때문에 지지봉 결합이 어려울 수 있습니다"></label>
         <label class="f" style="margin-top:10px">메모 (고객에게 안 보임)<input id="aMemo" maxlength="300" placeholder="예: 앞턱 7cm, 11/16 매장 확인"></label>
         <label class="f" style="margin-top:10px">제품 링크 (선택 · 고객 검색 "제품 정보 보기"에 연결)<input id="aLink" type="url" maxlength="500" placeholder="https:// 제조사·공식 판매 페이지 주소"></label>
         <p class="sub" id="aLinkAuto" style="margin:4px 2px 0" hidden></p>
@@ -890,7 +891,7 @@ function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
     <div class="mcell">${thumb(r.photo)}<div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}${" · " + esc(typeGroup(r.type))}</div></div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
-    <div class="memo"><span>${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+    <div class="memo"><span>${r.note ? "<b>고객 안내:</b> " + esc(r.note) + "<br>" : ""}${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
     <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 직접 링크 지움)" value="${esc(r.mylink || "")}"><button type="button" data-lsave>저장</button><button type="button" data-lcancel>취소</button></div>
   </div>`;
 }
@@ -961,7 +962,7 @@ function editStart(r, rowEl) {
   addFormHome(); editing = r; showTab("list");
   if (rowEl) rowEl.after($("addForm"));   // 위로 올라가지 않고 누른 줄 바로 밑에서 수정
   $("addTitle").textContent = "세면대 수정"; $("aBtn").textContent = "저장"; $("aCancel").hidden = $("aX").hidden = false;
-  pickBrand(r.brand); $("aModel").value = r.model; $("aMemo").value = r.memo; setAddSt(r.st);
+  pickBrand(r.brand); $("aModel").value = r.model; $("aMemo").value = r.memo; $("aNote").value = r.note || ""; setAddSt(r.st);
   $("aLink").value = r.mylink || "";
   $("aLinkAuto").hidden = !(r.auto && r.link); if (r.auto && r.link) $("aLinkAuto").textContent = "비워 두면 자동으로 찾은 링크를 씁니다: " + r.link;
   $("addMsg").textContent = "";
@@ -970,19 +971,19 @@ function editStart(r, rowEl) {
 }
 function editEnd() {
   addFormHome(); editing = null; $("addTitle").textContent = "세면대 등록"; $("aBtn").textContent = "등록"; $("aCancel").hidden = $("aX").hidden = true;
-  $("aModel").value = ""; $("aMemo").value = ""; $("aLink").value = ""; $("aLinkAuto").hidden = true; setAddSt(0); $("aSize").hidden = true; sizeQ = "";
+  $("aModel").value = ""; $("aMemo").value = ""; $("aNote").value = ""; $("aLink").value = ""; $("aLinkAuto").hidden = true; setAddSt(0); $("aSize").hidden = true; sizeQ = "";
 }
 $("aCancel").addEventListener("click", editEnd); $("aX").addEventListener("click", editEnd);
 $("addForm").addEventListener("submit", e => {
   e.preventDefault();
-  const brand = $("aBrand").value.trim(), model = $("aModel").value.trim(), memo = $("aMemo").value.trim(), link = $("aLink").value.trim();
+  const brand = $("aBrand").value.trim(), model = $("aModel").value.trim(), memo = $("aMemo").value.trim(), note = $("aNote").value.trim(), link = $("aLink").value.trim();
   if (link && !/^https?:\/\/\S+$/i.test(link)) { $("addMsg").className = "msg err"; $("addMsg").textContent = "제품 링크는 https:// 로 시작하는 주소로 넣어 주세요."; return; }
   if (!brand || !model) return;
   const k = key(brand, model), same = rows.find(r => key(r.brand, r.model) === k);
   if (!editing && same) { $("addMsg").className = "msg err"; $("addMsg").textContent = `${same.brand} ${same.model} 은(는) 이미 등록돼 있습니다 (${ST[same.st]}). 바꾸려면 목록에서 [수정]을 눌러 주세요.`; return; }
   if (editing && same && same !== editing) { $("addMsg").className = "msg err"; $("addMsg").textContent = "같은 브랜드·품번이 이미 있습니다."; return; }
   $("aBtn").disabled = true; $("addMsg").className = "msg"; $("addMsg").textContent = "저장 중…";
-  const body = { action: "sinkSave", brand, model, st: addSt, memo, link };
+  const body = { action: "sinkSave", brand, model, st: addSt, memo, link, note };
   if (editing) body.old = { brand: editing.brand, model: editing.model }; else body.create = true;   // 새 등록은 같은 품번이 있으면 서버도 막는다
   post(body).then(x => {
     if (x.status === "unauth") return unauth();
@@ -995,7 +996,7 @@ $("addForm").addEventListener("submit", e => {
     // 사이즈 DB 의 같은 브랜드·품번 사진을 바로 붙인다 (서버 목록을 다시 받기 전에도 사진이 보이게)
     { const nb = norm(brand), nk = norm(ko(brand)), same = x => dbKeys(x[2]).includes(norm(model)) && (norm(x[1]).includes(nb) || (nk && norm(x[1]).includes(nk))), d = (db || []).find(x => x[14] && same(x)), d2 = d || (db || []).find(same); if (d) stamp.photo = d[14]; if (d2 && d2[3]) stamp.type = d2[3]; }
     if (link) { stamp.link = link; stamp.auto = false; } else if (target && !target.auto) { stamp.link = ""; }
-    if (target) Object.assign(target, { brand, model, st: addSt, memo }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo }, stamp));
+    if (target) Object.assign(target, { brand, model, st: addSt, memo, note }, stamp); else rows.unshift(Object.assign({ brand, model, st: addSt, memo, note }, stamp));
     $("addMsg").className = "msg ok"; $("addMsg").textContent = `${model} ${target ? "고쳤습니다" : "등록했습니다"} (${ST[addSt]}) — 고객 화면은 최대 5분 뒤 반영`;
     const inline = $("addForm").parentNode !== addHome.parent;
     editEnd(); refreshBrands(); renderList(); renderReqs();
