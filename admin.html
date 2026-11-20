@@ -414,7 +414,7 @@ function start() {
 $("mainTabs").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   [...$("mainTabs").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
-  ["list", "reqs", "db", "sort", "brands", "log", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
+  ["list", "reqs", "db", "sort", "brands", "log", "srch", "accs"].forEach(t => $("tab-" + t).hidden = b.dataset.tab !== t);
   if (b.dataset.tab === "db") loadDb();
   if (b.dataset.tab === "sort") { addFormHome(); editEnd(); loadDb(); }
   if (b.dataset.tab === "log") loadLog();
