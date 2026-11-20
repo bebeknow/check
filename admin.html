@@ -124,6 +124,7 @@
   .sr-rk { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
   .sr-no { color: var(--sub, #888); font-size: 12px; } .sr-q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .sr-log { grid-template-columns: 78px minmax(80px, 1fr) minmax(0, 1.2fr); } .sr-time { color: var(--sub, #777); font-size: 12px; } .sr-no-res { color: #b3261e; }
+  .lg-undo { margin-top: 6px; font-size: 12px; padding: 4px 10px; border-radius: 8px; border: 1.5px solid #e6c58a; background: #fff8ec; color: #8a5200; font-weight: 700; cursor: pointer; }
   .scard .shold { font-size: 11px; color: #a25a00; }
   .scard .ssim { font-size: 11px; color: #0b6b8a; margin-top: 2px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
@@ -810,10 +811,33 @@ function renderLog() {
   $("logRows").innerHTML = list.map(l => `<div class="lg">
       <div><span class="badge k-act">${esc(l[2])} ${esc(l[3])}</span> <b>${esc(l[4])}</b></div>
       ${l[5] || l[6] ? `<div class="chg">${l[5] ? `<s>${esc(l[5])}</s>` : ""}${l[5] && l[6] ? " → " : ""}${l[6] ? esc(l[6]) : ""}</div>` : ""}
-      <div class="sub">${esc(l[0])} · ${esc(l[1] || "-")}</div>
+      <div class="sub">${esc(l[0])} · ${esc(l[1] || "-")}${l[8] ? ` · <b>되돌림</b> ${esc(l[8])}` : ""}</div>
+      ${l[7] && !l[8] ? `<button type="button" class="lg-undo" data-lrow="${l[9]}">되돌리기</button>` : ""}
     </div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
 }
 ["lq", "lk"].forEach(id => $(id).addEventListener("input", renderLog));
+$("logRows").addEventListener("click", async e => {
+  const b = e.target.closest(".lg-undo"); if (!b) return;
+  const l = (logs || []).find(z => String(z[9]) === b.dataset.lrow); if (!l) return;
+  if (!confirm(`이 변경을 되돌릴까요?
+
+${l[2]} ${l[3]} · ${l[4]}
+${l[5] ? l[5] + " → " : ""}${l[6]}
+
+(되돌린 것도 기록에 남습니다)`)) return;
+  b.disabled = true; b.textContent = "되돌리는 중…";
+  try {
+    const r = await post({ action: "sinkUndo", row: +b.dataset.lrow });
+    if (r.status === "unauth") return unauth();
+    if (r.status === "done") { toast("이미 되돌린 기록입니다."); }
+    else if (r.status !== "ok") throw 0;
+    else toast("되돌렸습니다 — " + r.msg);
+    // 목록·사이즈 DB·분류 화면을 서버 기준으로 다시 받는다
+    call(GAS_URL + "?sink=admin&token=" + encodeURIComponent(token)).then(a => { if (a.status === "ok") { rows.length = 0; (a.rows || []).forEach(z => rows.push(z)); setBrands(a.brands); refreshBrands(); renderList(); } });
+    if (db) { db = null; loadDb(true); }
+    logs = null; loadLog();
+  } catch (err) { b.disabled = false; b.textContent = "되돌리기"; toast("되돌리지 못했습니다. 다시 눌러 주세요."); }
+});
 
 /* ── 고객 검색 기록 (관리자) ── [일시, 검색어, 결과 수, 첫 결과 품번] 새것 먼저 */
 let srch = null, srchBusy = false;
