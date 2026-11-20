@@ -103,6 +103,15 @@ function search(raw) {
 }
 $("sform").addEventListener("submit", e => { e.preventDefault(); $("q").blur(); search($("q").value); });
 
+// 구매 클릭 기록: "보러 가기" 버튼(카드) / 상단 제품 링크를 누를 때. 새 탭으로 열리므로 화면에는 영향 없음
+document.addEventListener("click", e => {
+  try {
+    const a = e.target.closest("a.buy, #prod"); if (!a) return;
+    const card = a.closest(".item"), m = card ? (card.querySelector(".model") || {}).textContent : "(상단 링크)";
+    fetch(GAS_URL + "?sink=click&m=" + encodeURIComponent(m || ""), { keepalive: true, mode: "no-cors" }).catch(() => {});
+  } catch (err) {}
+});
+
 // 방문 기록: 페이지가 열릴 때 한 번 (같은 기기에서 30분 안에 다시 열면 세지 않음). 기록이 안 돼도 화면에는 영향 없음
 try {
   const t = +localStorage.getItem("checkVisitAt") || 0;
