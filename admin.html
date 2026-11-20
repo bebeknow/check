@@ -306,7 +306,7 @@
       <div class="card">
         <div class="meta" id="srMeta">불러오는 중…</div>
         <div id="srStats"></div>
-        <h3 class="sr-h">날짜별 (최근 14일)</h3><div id="srDays" class="sr-tbl"></div>
+        <h3 class="sr-h">날짜별 (최근 7일)</h3><div id="srDays" class="sr-tbl"></div>
         <div class="sr-two">
           <div><h3 class="sr-h">자주 찾은 품번</h3><div id="srTop"></div></div>
           <div><h3 class="sr-h">결과 없음 (등록 안 된 품번)</h3><div id="srMiss"></div></div>
@@ -835,8 +835,8 @@ function renderSrch() {
   $("srMeta").textContent = `전체 ${srch.total}줄 중 최근 ${all.length}줄 기준 (검색 ${rs.length} · 방문 ${vs.length})`;
   const box = (t, v, sub) => `<div class="sr-box"><div class="sr-t">${t}</div><div class="sr-v">${v}</div>${sub ? `<div class="sr-s">${sub}</div>` : ""}</div>`;
   $("srStats").innerHTML = `<div class="sr-boxes">${box("오늘 방문", vDay[today] || 0, "검색 " + (sDay[today] || 0))}${box("최근 7일 방문", sum(vDay, 7), "검색 " + sum(sDay, 7))}${box("방문 대비 검색", sum(vDay, 7) ? Math.round(sum(sDay, 7) * 100 / sum(vDay, 7)) + "%" : "-", "최근 7일")}${box("결과 없음", rs.length ? Math.round(miss * 100 / rs.length) + "%" : "-", miss + "건")}</div>`;
-  const mx = Math.max(1, ...days.map(d => Math.max(vDay[d] || 0, sDay[d] || 0)));
-  $("srDays").innerHTML = `<div class="sr-tr sr-th"><span>날짜</span><span>방문</span><span>검색</span></div>` + days.map(d => `<div class="sr-tr"><span>${d.slice(5).replace("-", "/")}${d === today ? " (오늘)" : ""}</span><span><i class="sr-bar" style="width:${(vDay[d] || 0) * 100 / mx}%"></i><b>${vDay[d] || 0}</b></span><span><i class="sr-bar s" style="width:${(sDay[d] || 0) * 100 / mx}%"></i><b>${sDay[d] || 0}</b></span></div>`).join("");
+  const mx = Math.max(1, ...days.slice(0, 7).map(d => Math.max(vDay[d] || 0, sDay[d] || 0)));
+  $("srDays").innerHTML = `<div class="sr-tr sr-th"><span>날짜</span><span>방문</span><span>검색</span></div>` + days.slice(0, 7).map(d => `<div class="sr-tr"><span>${d.slice(5).replace("-", "/")}${d === today ? " (오늘)" : ""}</span><span><i class="sr-bar" style="width:${(vDay[d] || 0) * 100 / mx}%"></i><b>${vDay[d] || 0}</b></span><span><i class="sr-bar s" style="width:${(sDay[d] || 0) * 100 / mx}%"></i><b>${sDay[d] || 0}</b></span></div>`).join("");
   const cnt = list => { const c = {}; list.forEach(r => { const k = norm(r[1]); if (!k) return; c[k] = c[k] || { n: 0, label: r[1] }; c[k].n++; }); return Object.values(c).sort((a, b) => b.n - a.n).slice(0, 10); };
   const rank = a => a.length ? a.map((o, i) => `<div class="sr-rk"><span class="sr-no">${i + 1}</span><span class="sr-q">${esc(o.label)}</span><b>${o.n}회</b></div>`).join("") : `<div class="sub">아직 없습니다</div>`;
   $("srTop").innerHTML = rank(cnt(rs)); $("srMiss").innerHTML = rank(cnt(rs.filter(r => !r[2])));
