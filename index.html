@@ -118,7 +118,7 @@
     <a class="talk" id="talkGuide" href="#" target="_blank" rel="noopener">네이버 톡톡으로 사진 보내기</a>
   </section>
 
-  <footer hidden>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트됩니다 · v2026.11.19-1</footer>
+  <footer hidden>베베노 · 라이프비기닝 &nbsp;|&nbsp; 목록은 매장 확인 결과에 따라 계속 업데이트됩니다 · v2026.11.20-1</footer>
 </div>
 
 
@@ -225,6 +225,12 @@ function search(raw) {
   }).finally(() => { busy = false; $("go").disabled = false; });
 }
 $("sform").addEventListener("submit", e => { e.preventDefault(); $("q").blur(); search($("q").value); });
+
+// 방문 기록: 페이지가 열릴 때 한 번 (같은 기기에서 30분 안에 다시 열면 세지 않음). 기록이 안 돼도 화면에는 영향 없음
+try {
+  const t = +localStorage.getItem("checkVisitAt") || 0;
+  if (Date.now() - t > 30 * 60 * 1000) { localStorage.setItem("checkVisitAt", String(Date.now())); get({ sink: "visit" }).catch(() => {}); }
+} catch (e) {}
 
 // 주소에 ?q=품번 이 있으면 바로 검색 (톡톡 답변·QR 에서 링크로 보낼 때)
 const q0 = new URLSearchParams(location.search).get("q");

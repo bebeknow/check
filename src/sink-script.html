@@ -103,6 +103,12 @@ function search(raw) {
 }
 $("sform").addEventListener("submit", e => { e.preventDefault(); $("q").blur(); search($("q").value); });
 
+// 방문 기록: 페이지가 열릴 때 한 번 (같은 기기에서 30분 안에 다시 열면 세지 않음). 기록이 안 돼도 화면에는 영향 없음
+try {
+  const t = +localStorage.getItem("checkVisitAt") || 0;
+  if (Date.now() - t > 30 * 60 * 1000) { localStorage.setItem("checkVisitAt", String(Date.now())); get({ sink: "visit" }).catch(() => {}); }
+} catch (e) {}
+
 // 주소에 ?q=품번 이 있으면 바로 검색 (톡톡 답변·QR 에서 링크로 보낼 때)
 const q0 = new URLSearchParams(location.search).get("q");
 if (q0) { $("q").value = q0; search(q0); }
