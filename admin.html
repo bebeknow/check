@@ -169,6 +169,7 @@
       <button type="button" data-tab="sort" aria-pressed="false">사진 분류</button>
       <button type="button" data-tab="brands" aria-pressed="false" hidden id="brandTabBtn">브랜드</button>
       <button type="button" data-tab="log" aria-pressed="false" hidden id="logTabBtn">기록</button>
+      <button type="button" data-tab="srch" aria-pressed="false" hidden id="srchTabBtn">고객 검색</button>
       <button type="button" data-tab="accs" aria-pressed="false" hidden id="accTabBtn">계정 <span id="accCount"></span></button>
     </div>
 
@@ -286,6 +287,20 @@
       </div>
     </section>
 
+    <!-- 고객 검색 기록 탭 (관리자만): 고객 검색 페이지에서 남긴 검색 -->
+    <section id="tab-srch" hidden>
+      <div class="card">
+        <div class="meta" id="srMeta">불러오는 중…</div>
+        <div id="srStats"></div>
+        <h3 style="margin:14px 0 6px;font-size:14px">자주 찾은 품번</h3><div id="srTop"></div>
+        <h3 style="margin:14px 0 6px;font-size:14px">결과 없음 (등록 안 된 품번)</h3><div id="srMiss"></div>
+        <h3 style="margin:14px 0 6px;font-size:14px">최근 검색</h3>
+        <input id="srq" type="search" placeholder="검색어 찾기" style="margin-bottom:6px">
+        <div id="srRows"></div>
+        <div class="meta" style="margin-top:12px">고객이 검색 버튼을 누르거나 ?q= 링크로 열 때마다 한 줄씩 남습니다. 연락처·기기 정보는 남기지 않고, 고객은 볼 수 없습니다. 시트 "검색 기록" 탭에서도 볼 수 있습니다.</div>
+      </div>
+    </section>
+
     <section id="tab-accs" hidden>
       <div class="card">
         <div class="meta">새로 만든 계정은 "대기"입니다. 승인해야 로그인할 수 있습니다. 관리자는 다른 계정을 승인·중지할 수 있습니다.</div>
@@ -376,7 +391,7 @@ let me = null, accs = [];
 /* 이름 줄과 탭 (관리자면 브랜드·기록·계정까지) */
 function showMe(m) {
   $("who").hidden = false; $("whoName").textContent = m.name + (m.role === "관리자" ? " (관리자)" : "");
-  $("accTabBtn").hidden = $("brandTabBtn").hidden = $("logTabBtn").hidden = m.role !== "관리자";
+  $("accTabBtn").hidden = $("brandTabBtn").hidden = $("logTabBtn").hidden = $("srchTabBtn").hidden = m.role !== "관리자";
 }
 function start() {
   $("auth").hidden = true; $("app").hidden = false;
@@ -403,6 +418,7 @@ $("mainTabs").addEventListener("click", e => {
   if (b.dataset.tab === "db") loadDb();
   if (b.dataset.tab === "sort") { addFormHome(); editEnd(); loadDb(); }
   if (b.dataset.tab === "log") loadLog();
+  if (b.dataset.tab === "srch") loadSrch();
 });
 function showTab(t) { $("mainTabs").querySelector(`[data-tab="${t}"]`).click(); }
 
@@ -780,6 +796,35 @@ function renderLog() {
     </div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
 }
 ["lq", "lk"].forEach(id => $(id).addEventListener("input", renderLog));
+
+/* ── 고객 검색 기록 (관리자) ── [일시, 검색어, 결과 수, 첫 결과 품번] 새것 먼저 */
+let srch = null, srchBusy = false;
+function loadSrch() {
+  if (srchBusy) return; srchBusy = true; $("srMeta").textContent = "불러오는 중…";
+  post({ action: "sinkSearchList" }).then(x => {
+    if (x.status === "unauth") return unauth();
+    if (x.status !== "ok") throw 0;
+    srch = x; renderSrch();
+  }).catch(() => { $("srMeta").textContent = "불러오지 못했습니다. 탭을 다시 눌러 주세요."; }).finally(() => { srchBusy = false; });
+}
+function renderSrch() {
+  if (!srch) return;
+  const rs = srch.rows || [], pad = n => String(n).padStart(2, "0"), ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const now = new Date(), today = ymd(now), days = [];
+  for (let i = 0; i < 14; i++) { const d = new Date(now); d.setDate(d.getDate() - i); days.push(ymd(d)); }
+  const byDay = {}; rs.forEach(r => { const k = String(r[0]).slice(0, 10); byDay[k] = (byDay[k] || 0) + 1; });
+  const wk = days.slice(0, 7).reduce((a, d) => a + (byDay[d] || 0), 0), miss = rs.filter(r => !r[2]).length;
+  $("srMeta").textContent = `전체 ${srch.total}건 중 최근 ${rs.length}건을 불러왔습니다`;
+  const box = (t, v) => `<div style="flex:1;min-width:90px;background:#f6f2ec;border-radius:10px;padding:8px 10px"><div class="sub">${t}</div><b style="font-size:18px">${v}</b></div>`;
+  $("srStats").innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">${box("오늘", byDay[today] || 0)}${box("최근 7일", wk)}${box("결과 없음 비율", rs.length ? Math.round(miss * 100 / rs.length) + "%" : "-")}</div>
+    <div class="sub" style="margin-top:8px">일별: ${days.map(d => d.slice(5) + " <b>" + (byDay[d] || 0) + "</b>").join(" · ")}</div>`;
+  const cnt = (list) => { const c = {}; list.forEach(r => { const k = norm(r[1]); if (!k) return; c[k] = c[k] || { n: 0, label: r[1] }; c[k].n++; }); return Object.values(c).sort((a, b) => b.n - a.n).slice(0, 15); };
+  const li = a => a.map(o => `<span class="badge" style="margin:2px 4px 2px 0">${esc(o.label)} · ${o.n}</span>`).join("") || `<div class="sub">없음</div>`;
+  $("srTop").innerHTML = li(cnt(rs)); $("srMiss").innerHTML = li(cnt(rs.filter(r => !r[2])));
+  const q = norm($("srq").value);
+  $("srRows").innerHTML = rs.filter(r => !q || norm(r[1]).includes(q) || norm(r[3]).includes(q)).slice(0, 300).map(r => `<div class="lg"><b>${esc(r[1])}</b> <span class="sub">→ ${r[2] ? esc(r[3]) + (r[2] > 1 ? " 외 " + (r[2] - 1) + "개" : "") : "결과 없음"} · ${esc(r[0])}</span></div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
+}
+$("srq").addEventListener("input", renderSrch);
 
 /* ── 브랜드 (관리자) ── */
 let bEditing = null;
