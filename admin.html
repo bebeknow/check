@@ -110,6 +110,20 @@
   .sbtns .st { color: #b26a00; border-color: #e6c58a; } .sbtns .st:hover { background: #fdf1dc; }
   .sbtns .sx { color: #c0392b; border-color: #e5a9a2; } .sbtns .sx:hover { background: #fbe7e4; }
   .scard .snote { width: 100%; box-sizing: border-box; font-size: 11px; padding: 4px 5px; border: 1px solid var(--line); border-radius: 6px; }
+  .sr-boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
+  .sr-box { background: #f6f2ec; border-radius: 12px; padding: 10px 12px; }
+  .sr-t { font-size: 12px; color: var(--sub, #777); } .sr-v { font-size: 24px; font-weight: 800; line-height: 1.2; } .sr-s { font-size: 12px; color: var(--sub, #777); }
+  .sr-h { margin: 20px 0 8px; font-size: 14px; }
+  .sr-tbl { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .sr-tr { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 10px; align-items: center; padding: 7px 12px; font-size: 13px; border-top: 1px solid var(--line); }
+  .sr-tr:first-child { border-top: 0; } .sr-th { background: #f6f2ec; font-weight: 700; font-size: 12px; }
+  .sr-tr > span { position: relative; min-width: 0; display: flex; align-items: center; gap: 6px; }
+  .sr-bar { display: block; height: 8px; border-radius: 4px; background: #c9b8a3; min-width: 0; } .sr-bar.s { background: #6b4a2b; }
+  .sr-tr b { font-variant-numeric: tabular-nums; }
+  .sr-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } @media (max-width: 620px) { .sr-two { grid-template-columns: 1fr; } }
+  .sr-rk { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .sr-no { color: var(--sub, #888); font-size: 12px; } .sr-q { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .sr-log { grid-template-columns: 78px minmax(80px, 1fr) minmax(0, 1.2fr); } .sr-time { color: var(--sub, #777); font-size: 12px; } .sr-no-res { color: #b3261e; }
   .scard .shold { font-size: 11px; color: #a25a00; }
   .scard .ssim { font-size: 11px; color: #0b6b8a; margin-top: 2px; }
   @media (max-width: 560px) { .filters { grid-template-columns: 1fr 1fr; } .filters input { grid-column: 1 / -1; } .grid2 { grid-template-columns: 1fr; } }
@@ -292,12 +306,15 @@
       <div class="card">
         <div class="meta" id="srMeta">불러오는 중…</div>
         <div id="srStats"></div>
-        <h3 style="margin:14px 0 6px;font-size:14px">자주 찾은 품번</h3><div id="srTop"></div>
-        <h3 style="margin:14px 0 6px;font-size:14px">결과 없음 (등록 안 된 품번)</h3><div id="srMiss"></div>
-        <h3 style="margin:14px 0 6px;font-size:14px">최근 검색</h3>
-        <input id="srq" type="search" placeholder="검색어 찾기" style="margin-bottom:6px">
-        <div id="srRows"></div>
-        <div class="meta" style="margin-top:12px">고객이 페이지를 열면 "방문", 검색하면 "검색"으로 한 줄씩 남습니다. 연락처·기기 정보는 남기지 않고, 고객은 볼 수 없습니다. 시트 "검색 기록" 탭에서도 볼 수 있습니다. 방문은 같은 기기에서 30분 안에 다시 열면 세지 않습니다. 우리 기기 방문도 지금은 섞여 있습니다.</div>
+        <h3 class="sr-h">날짜별 (최근 14일)</h3><div id="srDays" class="sr-tbl"></div>
+        <div class="sr-two">
+          <div><h3 class="sr-h">자주 찾은 품번</h3><div id="srTop"></div></div>
+          <div><h3 class="sr-h">결과 없음 (등록 안 된 품번)</h3><div id="srMiss"></div></div>
+        </div>
+        <h3 class="sr-h">최근 검색</h3>
+        <input id="srq" type="search" placeholder="검색어 찾기" style="margin-bottom:8px">
+        <div id="srRows" class="sr-tbl"></div>
+        <div class="meta" style="margin-top:14px">고객이 페이지를 열면 "방문", 검색하면 "검색"으로 한 줄씩 남습니다. 연락처·기기 정보는 남기지 않고, 고객은 볼 수 없습니다. 같은 기기가 30분 안에 다시 열면 방문으로 세지 않습니다. 우리 기기 접속도 지금은 섞여 있습니다.</div>
       </div>
     </section>
 
@@ -812,17 +829,19 @@ function renderSrch() {
   const all = srch.rows || [], rs = all.filter(r => r[4] !== "방문"), vs = all.filter(r => r[4] === "방문"), pad = n => String(n).padStart(2, "0"), ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   const now = new Date(), today = ymd(now), days = [];
   for (let i = 0; i < 14; i++) { const d = new Date(now); d.setDate(d.getDate() - i); days.push(ymd(d)); }
-  const byDay = {}, vDay = {}; rs.forEach(r => { const k = String(r[0]).slice(0, 10); byDay[k] = (byDay[k] || 0) + 1; }); vs.forEach(r => { const k = String(r[0]).slice(0, 10); vDay[k] = (vDay[k] || 0) + 1; });
-  const wk = days.slice(0, 7).reduce((a, d) => a + (byDay[d] || 0), 0), miss = rs.filter(r => !r[2]).length;
-  $("srMeta").textContent = `전체 ${srch.total}줄 중 최근 ${all.length}줄을 불러왔습니다 (검색 ${rs.length} · 방문 ${vs.length})`;
-  const box = (t, v) => `<div style="flex:1;min-width:90px;background:#f6f2ec;border-radius:10px;padding:8px 10px"><div class="sub">${t}</div><b style="font-size:18px">${v}</b></div>`;
-  $("srStats").innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">${box("오늘", byDay[today] || 0)}${box("최근 7일", wk)}${box("오늘 방문", vDay[today] || 0)}${box("최근 7일 방문", days.slice(0, 7).reduce((a, d) => a + (vDay[d] || 0), 0))}${box("결과 없음 비율", rs.length ? Math.round(miss * 100 / rs.length) + "%" : "-")}</div>
-    <div class="sub" style="margin-top:8px">일별 방문 / 검색: ${days.map(d => d.slice(5) + " <b>" + (vDay[d] || 0) + "</b>/<b>" + (byDay[d] || 0) + "</b>").join(" · ")}</div>`;
-  const cnt = (list) => { const c = {}; list.forEach(r => { const k = norm(r[1]); if (!k) return; c[k] = c[k] || { n: 0, label: r[1] }; c[k].n++; }); return Object.values(c).sort((a, b) => b.n - a.n).slice(0, 15); };
-  const li = a => a.map(o => `<span class="badge" style="margin:2px 4px 2px 0">${esc(o.label)} · ${o.n}</span>`).join("") || `<div class="sub">없음</div>`;
-  $("srTop").innerHTML = li(cnt(rs)); $("srMiss").innerHTML = li(cnt(rs.filter(r => !r[2])));
+  const cntDay = list => { const c = {}; list.forEach(r => { const k = String(r[0]).slice(0, 10); c[k] = (c[k] || 0) + 1; }); return c; };
+  const sDay = cntDay(rs), vDay = cntDay(vs), sum = (c, n) => days.slice(0, n).reduce((a, d) => a + (c[d] || 0), 0);
+  const miss = rs.filter(r => !r[2]).length;
+  $("srMeta").textContent = `전체 ${srch.total}줄 중 최근 ${all.length}줄 기준 (검색 ${rs.length} · 방문 ${vs.length})`;
+  const box = (t, v, sub) => `<div class="sr-box"><div class="sr-t">${t}</div><div class="sr-v">${v}</div>${sub ? `<div class="sr-s">${sub}</div>` : ""}</div>`;
+  $("srStats").innerHTML = `<div class="sr-boxes">${box("오늘 방문", vDay[today] || 0, "검색 " + (sDay[today] || 0))}${box("최근 7일 방문", sum(vDay, 7), "검색 " + sum(sDay, 7))}${box("방문 대비 검색", sum(vDay, 7) ? Math.round(sum(sDay, 7) * 100 / sum(vDay, 7)) + "%" : "-", "최근 7일")}${box("결과 없음", rs.length ? Math.round(miss * 100 / rs.length) + "%" : "-", miss + "건")}</div>`;
+  const mx = Math.max(1, ...days.map(d => Math.max(vDay[d] || 0, sDay[d] || 0)));
+  $("srDays").innerHTML = `<div class="sr-tr sr-th"><span>날짜</span><span>방문</span><span>검색</span></div>` + days.map(d => `<div class="sr-tr"><span>${d.slice(5).replace("-", "/")}${d === today ? " (오늘)" : ""}</span><span><i class="sr-bar" style="width:${(vDay[d] || 0) * 100 / mx}%"></i><b>${vDay[d] || 0}</b></span><span><i class="sr-bar s" style="width:${(sDay[d] || 0) * 100 / mx}%"></i><b>${sDay[d] || 0}</b></span></div>`).join("");
+  const cnt = list => { const c = {}; list.forEach(r => { const k = norm(r[1]); if (!k) return; c[k] = c[k] || { n: 0, label: r[1] }; c[k].n++; }); return Object.values(c).sort((a, b) => b.n - a.n).slice(0, 10); };
+  const rank = a => a.length ? a.map((o, i) => `<div class="sr-rk"><span class="sr-no">${i + 1}</span><span class="sr-q">${esc(o.label)}</span><b>${o.n}회</b></div>`).join("") : `<div class="sub">아직 없습니다</div>`;
+  $("srTop").innerHTML = rank(cnt(rs)); $("srMiss").innerHTML = rank(cnt(rs.filter(r => !r[2])));
   const q = norm($("srq").value);
-  $("srRows").innerHTML = rs.filter(r => !q || norm(r[1]).includes(q) || norm(r[3]).includes(q)).slice(0, 300).map(r => `<div class="lg"><b>${esc(r[1])}</b> <span class="sub">→ ${r[2] ? esc(r[3]) + (r[2] > 1 ? " 외 " + (r[2] - 1) + "개" : "") : "결과 없음"} · ${esc(r[0])}</span></div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
+  $("srRows").innerHTML = rs.filter(r => !q || norm(r[1]).includes(q) || norm(r[3]).includes(q)).slice(0, 300).map(r => `<div class="sr-tr sr-log"><span class="sr-time">${esc(String(r[0]).slice(5))}</span><span class="sr-q">${esc(r[1])}</span><span class="${r[2] ? "" : "sr-no-res"}">${r[2] ? esc(r[3]) + (r[2] > 1 ? " 외 " + (r[2] - 1) + "개" : "") : "결과 없음"}</span></div>`).join("") || `<div class="sub">기록이 없습니다.</div>`;
 }
 $("srq").addEventListener("input", renderSrch);
 
