@@ -138,6 +138,36 @@
     .lf select:last-child { grid-column: 1 / -1; }
     .row .seg button { padding: 7px 8px; font-size: 13px; }
   }
+  .inl { display: none; }
+  /* ── 넓은 화면(PC): 왼쪽 메뉴 + 넓은 본문. 목록은 표처럼, 등록 칸은 왼쪽에 고정, 고객 안내·메모는 그 자리에서 고침 ── */
+  @media (min-width: 1000px) {
+    .wrap { max-width: 1600px; padding: 18px 28px 60px; }
+    #app { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 20px; align-items: start; }
+    #mainTabs { grid-column: 1; grid-row: 1 / span 30; position: sticky; top: 14px; display: flex; flex-direction: column; gap: 6px; margin: 0; }
+    #mainTabs button { flex: none; text-align: left; padding: 11px 14px; font-size: 15px; }
+    #app > section { grid-column: 2; min-width: 0; }
+    .wrap:has(#tab-sort:not([hidden])) { max-width: none; padding-left: 14px; padding-right: 14px; }
+    #tab-list .lf { position: sticky; top: 0; z-index: 3; background: #fff; padding: 8px 0 4px; margin: 0 0 4px; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+    #tab-list .lf input { grid-column: auto; }
+    #rows .row { grid-template-columns: minmax(200px, 1.1fr) auto minmax(300px, 2.2fr); gap: 6px 16px; padding: 8px 4px; }
+    #rows .row:hover { background: #faf7f3; }
+    #rows .inl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; grid-column: 3; grid-row: 1; }
+    #rows .inl input { font-size: 13px; padding: 6px 9px; }
+    #rows .row .memo { grid-column: 1 / -1; grid-row: 2; }
+    #rows .row .memo .mtxt { display: none; }
+    #rows .row .ilink { grid-row: 3; }
+    #tab-list .lf { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+    #tab-db .card, #tab-reqs .card, #tab-log .card, #tab-srch .card, #tab-brands .card, #tab-accs .card { margin-bottom: 12px; }
+  }
+  /* 아주 넓은 화면: 등록 칸을 목록 왼쪽에 붙이고, 목록 한 줄에 모두 */
+  @media (min-width: 1400px) {
+    #tab-list { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: start; }
+    #tab-list > #addForm { grid-column: 1; position: sticky; top: 14px; margin: 0; max-height: calc(100vh - 28px); overflow: auto; }
+    #tab-list > .card:not(#addForm) { grid-column: 2; margin: 0; }
+    #rows .row { grid-template-columns: minmax(170px, 1fr) auto minmax(260px, 2fr) minmax(200px, 1fr); }
+    #rows .row .memo { grid-column: 4; grid-row: 1; flex-wrap: wrap; }
+    #rows .row .memo span { white-space: normal; }
+  }
 </style>
 </head>
 <body>
@@ -985,7 +1015,8 @@ function rowHtml(r, i) {
   return `<div class="row" data-i="${i}">
     <div class="mcell">${thumb(r.photo)}<div><div class="model">${esc(r.model)}</div><div class="sub">${esc(ko(r.brand))}${" · " + esc(typeGroup(r.type))}</div></div></div>
     <div class="seg">${ST.map((t, s) => `<button type="button" class="s${s}${r.st === s ? " on" : ""}" data-set="${s}">${t}</button>`).join("")}</div>
-    <div class="memo"><span>${r.note ? "<b>고객 안내:</b> " + esc(r.note) + "<br>" : ""}${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}<span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
+    <div class="inl"><input data-f="note" maxlength="200" placeholder="고객 안내 (고객에게 보임)" value="${esc(r.note || "")}" aria-label="고객 안내"><input data-f="memo" maxlength="300" placeholder="메모 (고객에게 안 보임)" value="${esc(r.memo || "")}" aria-label="메모"></div>
+    <div class="memo"><span><span class="mtxt">${r.note ? "<b>고객 안내:</b> " + esc(r.note) + "<br>" : ""}${r.memo ? "메모: " + esc(r.memo) + "<br>" : ""}</span><span class="when">${whenTxt(r)}</span>${/^https?:\/\//.test(r.link || "") ? ` · <a class="plink" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer">제품 정보 ↗</a>${r.auto ? "" : " (직접)"}` : ""}</span><button type="button" data-link>링크</button><button type="button" data-edit>수정</button><button type="button" data-del>삭제</button></div>
     <div class="ilink" hidden><input type="url" maxlength="500" placeholder="https:// 제품 페이지 주소 (비우고 저장하면 직접 링크 지움)" value="${esc(r.mylink || "")}"><button type="button" data-lsave>저장</button><button type="button" data-lcancel>취소</button></div>
   </div>`;
 }
@@ -1000,6 +1031,20 @@ function renderList() {
 }
 ["fq", "fb", "fT", "fs", "fo"].forEach(id => $(id).addEventListener("input", () => { addFormHome(); editEnd(); renderList(); }));
 
+$("rows").addEventListener("change", e => {   // 데스크톱: 고객 안내·메모를 그 자리에서 고치면 바로 저장
+  const inp = e.target.closest(".inl input"); if (!inp) return;
+  const rowEl = inp.closest(".row"), r = rows[+rowEl.dataset.i]; if (!r) return;
+  const f = inp.dataset.f, val = inp.value.trim(), prev = r[f] || ""; if (val === prev) return;
+  rowEl.classList.add("saving");
+  post({ action: "sinkSave", brand: r.brand, model: r.model, st: r.st, [f]: val, old: { brand: r.brand, model: r.model } }).then(x => {
+    if (x.status === "unauth") return unauth();
+    if (x.status !== "ok") throw 0;
+    r[f] = val; r.at = "방금"; r.by = me ? me.name : ""; rowEl.classList.remove("saving");
+    const w = rowEl.querySelector(".when"); if (w) w.textContent = whenTxt(r);
+    toast(r.model + (f === "note" ? " 고객 안내" : " 메모") + (val ? " 저장" : " 지움") + (f === "note" ? " — 고객 화면은 최대 5분 뒤 반영" : ""));
+  }).catch(() => { rowEl.classList.remove("saving"); inp.value = prev; toast("저장하지 못했습니다. 다시 해 주세요."); });
+});
+$("rows").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.closest(".inl input")) { e.preventDefault(); e.target.blur(); } });
 $("rows").addEventListener("click", e => {
   const rowEl = e.target.closest(".row"); if (!rowEl) return;
   const r = rows[+rowEl.dataset.i]; if (!r) return;
