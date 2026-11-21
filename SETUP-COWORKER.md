@@ -23,7 +23,7 @@
    mkdir event-gas && cd event-gas
    clasp clone <스크립트 ID>
    ```
-4. Claude에게 이 파일과 `CLAUDE.md`(있으면)를 읽게 하고 시작한다.
+4. Claude에게 이 파일과 `docs/claude-notes.md`(작업 메모)를 읽게 하고 시작한다.
 
 ## 작업 규칙
 - 수정 전에 항상 `git pull --ff-only origin main` (서버는 `clasp pull`).
