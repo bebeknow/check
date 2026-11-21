@@ -178,6 +178,47 @@
   .sheet { margin-top: -30px; min-height: 420px; padding-top: 22px; border-radius: 32px 32px 0 0; background: var(--milk); box-shadow: 0 -10px 30px rgba(79,59,50,.07); }
   .sheet::before { content: ""; position: absolute; top: 9px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: var(--stone); }
   .search { background: linear-gradient(var(--milk) 76%, rgba(250,245,241,0)); }
+/*bp-css-start*/
+  /* 브랜드 선택: 가나다순, 영문 ABC순, 검색 */
+  .req label { position: relative; }
+  .req select.bp-native { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+  .req .bp-trigger { display: block; width: 100%; height: 50px; padding: 0 38px 0 14px; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); font-size: 16px; line-height: 48px; letter-spacing: inherit; text-align: left; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; background: var(--milk) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23957462' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9.5 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 18px; transition: border-color .2s ease, background-color .2s ease; }
+  .req .bp-trigger.is-empty { color: var(--ink2); }
+  .req .bp-trigger:focus-visible { outline: 0; border-color: var(--clay-soft); background-color: #fff; }
+  .req .bp-trigger { font-weight: 400; }
+  .req .bp-trigger:active { transform: none; border-color: var(--clay-soft); }
+  .bp { position: fixed; inset: 0; z-index: 60; }
+  .bp-dim { position: absolute; inset: 0; background: rgba(46,34,28,.42); opacity: 0; transition: opacity .28s ease; touch-action: none; }
+  .bp.is-open .bp-dim { opacity: 1; }
+  .bp-sheet { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: 100%; max-width: 480px; height: min(640px, 80vh); height: min(640px, 80dvh); margin: 0 auto; overflow: hidden; outline: 0; border-radius: 26px 26px 0 0; background: #fff; box-shadow: 0 -14px 40px rgba(46,34,28,.2); transform: translateY(105%); transition: transform .36s var(--ease); }
+  .bp.is-open .bp-sheet { transform: none; }
+  .bp-grip { flex: 0 0 auto; width: 38px; height: 4px; margin: 9px auto 0; border-radius: 2px; background: var(--stone); }
+  .bp-top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 8px 10px 6px 20px; }
+  .bp-top strong { font-size: 18px; font-weight: 500; letter-spacing: -.03em; color: var(--ink); }
+  .bp-close { position: relative; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+  .bp-close:active { background: var(--linen); }
+  .bp-close::before, .bp-close::after { content: ""; position: absolute; top: 50%; left: 50%; width: 16px; height: 1.7px; margin: -.85px 0 0 -8px; border-radius: 1px; background: var(--ink); transform: rotate(45deg); }
+  .bp-close::after { transform: rotate(-45deg); }
+  .bp-search { position: relative; flex: 0 0 auto; margin: 0 16px 8px; }
+  .bp-search::before { content: ""; position: absolute; left: 14px; top: 50%; width: 19px; height: 19px; margin-top: -9.5px; background: var(--taupe); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.8'/%3E%3Cpath d='m15.8 15.8 5 5'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.8'/%3E%3Cpath d='m15.8 15.8 5 5'/%3E%3C/svg%3E") center/contain no-repeat; }
+  .bp-search input { display: block; width: 100%; height: 48px; padding: 0 14px 0 42px; border: 1px solid transparent; border-radius: 16px; outline: 0; background: var(--milk); color: var(--ink); font-size: 16px; -webkit-appearance: none; appearance: none; transition: border-color .2s ease, background .2s ease; }
+  .bp-search input::placeholder { color: #9A8D84; font-weight: 300; }
+  .bp-search input:focus { border-color: var(--clay-soft); background: #fff; }
+  .bp-search input::-webkit-search-cancel-button { -webkit-appearance: none; width: 20px; height: 20px; margin-right: -2px; cursor: pointer; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23957462' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m7 7 10 10M17 7 7 17'/%3E%3C/svg%3E") center/contain no-repeat; }
+  .bp-list { position: relative; flex: 1 1 auto; min-height: 0; padding: 0 8px 8px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .bp-head-row { padding: 14px 12px 5px; font-size: 12px; font-weight: 500; letter-spacing: .02em; color: var(--taupe); }
+  .bp-item { position: relative; display: flex; align-items: baseline; gap: 8px; width: 100%; min-height: 48px; padding: 12px 40px 12px 12px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 16px; line-height: 1.35; text-align: left; cursor: pointer; transition: background .15s ease; }
+  .bp-item:active, .bp-item.is-active { background: var(--milk); }
+  @media (hover: hover) { .bp-item:hover { background: var(--milk); } }
+  .bp-name { flex: 0 1 auto; min-width: 0; }
+  .bp-sub { flex: 1 1 0; min-width: 0; overflow: hidden; color: #8C7F76; font-size: 12px; letter-spacing: 0; white-space: nowrap; text-overflow: ellipsis; }
+  .bp-item[aria-selected="true"] { color: var(--clay); font-weight: 500; }
+  .bp-item[aria-selected="true"]::after { content: ""; position: absolute; right: 13px; top: 50%; width: 18px; height: 18px; margin-top: -9px; background: var(--clay); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.600 4.600 4.600L19 7.600'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.600 4.600 4.600L19 7.600'/%3E%3C/svg%3E") center/contain no-repeat; }
+  .bp-empty { margin: 0; padding: 34px 16px; color: var(--ink2); font-size: 14.5px; text-align: center; }
+  .bp-self { flex: 0 0 auto; height: 52px; margin: 0 16px calc(10px + env(safe-area-inset-bottom, 0px)); border: 0; border-radius: 26px; background: var(--linen); color: var(--ink); font-size: 15.5px; font-weight: 500; cursor: pointer; transition: transform .2s var(--ease); }
+  .bp-self:active { transform: scale(.98); }
+  .bp-close:focus-visible, .bp-self:focus-visible { outline: 2px solid var(--clay-soft); outline-offset: 2px; }
+/*bp-css-end*/
 </style>
 </head>
 <body data-state="idle">
@@ -472,4 +513,196 @@
   wake();
 })();
 </script>
+<!--bp-js-start-->
+<script data-brand>
+(function () {
+  // 확인 요청 양식의 브랜드 칸: 가나다순 다음 영문 ABC순으로 정렬하고, 검색해서 고르게 한다.
+  // 실제 값은 원래의 선택 칸(#rb)에 넣으므로 전송 코드는 그대로다. 이 스크립트가 실패해도 원래 선택 칸이 남는다.
+  var list = document.getElementById("list");
+  if (!list) return;
+  var CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+  var coarse = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
+  var root, sheet, input, box, foot, current = null, trigger = null, active = -1, shown = [], closeTimer = 0, savedOverflow = "";
+
+  function isKo(s) { return /^[가-힣]/.test(s); }
+  function norm(s) { return String(s || "").toLowerCase().replace(/[\s\-_.]/g, ""); }
+  function chosung(s) {
+    var out = "";
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      out += c >= 0xAC00 && c <= 0xD7A3 ? CHO.charAt(Math.floor((c - 0xAC00) / 588)) : s.charAt(i);
+    }
+    return out;
+  }
+  function order(a, b) {
+    var ka = isKo(a), kb = isKo(b);
+    if (ka !== kb) return ka ? -1 : 1;
+    var x = ka ? a : a.toUpperCase(), y = kb ? b : b.toUpperCase();
+    return x < y ? -1 : x > y ? 1 : 0;
+  }
+  function serverBrands() {
+    try { return typeof brands !== "undefined" && Array.isArray(brands) ? brands : []; } catch (e) { return []; }
+  }
+  function realOptions(sel) {
+    return [].slice.call(sel.options).filter(function (o) { return o.value && o.value !== "__self"; });
+  }
+  function arrange(sel) {
+    var value = sel.value, opts = realOptions(sel), seen = {}, self = null;
+    [].slice.call(sel.options).forEach(function (o) { if (o.value === "__self") self = o; });
+    opts.forEach(function (o) { seen[o.value] = 1; });
+    // 양식이 브랜드 목록보다 먼저 그려진 경우 뒤늦게 온 목록을 채운다
+    serverBrands().forEach(function (x) {
+      if (!x || !x[0] || seen[x[0]]) return;
+      seen[x[0]] = 1; opts.push(new Option(x[1] || x[0], x[0]));
+    });
+    opts.sort(function (a, b) { return order(a.text, b.text); });
+    opts.forEach(function (o) { sel.insertBefore(o, self); });
+    sel.value = value;
+  }
+  function find(q) {
+    var items = realOptions(current).map(function (o) { return { value: o.value, label: o.text }; });
+    var n = norm(q);
+    if (!n) return items;
+    var onlyCho = /^[ㄱ-ㅎ]+$/.test(n), first = [], rest = [];
+    items.forEach(function (it) {
+      var l = norm(it.label), v = norm(it.value), c = onlyCho ? chosung(l) : "";
+      if (l.indexOf(n) === 0 || v.indexOf(n) === 0 || (onlyCho && c.indexOf(n) === 0)) first.push(it);
+      else if (l.indexOf(n) >= 0 || v.indexOf(n) >= 0 || (onlyCho && c.indexOf(n) >= 0)) rest.push(it);
+    });
+    return first.concat(rest);
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function row(it, index) {
+    var b = el("button", "bp-item");
+    b.type = "button"; b.id = "bp-o-" + index; b.tabIndex = -1;
+    b.setAttribute("role", "option");
+    b.setAttribute("aria-selected", current.value === it.value ? "true" : "false");
+    b.appendChild(el("span", "bp-name", it.label));
+    if (it.value && norm(it.value) !== norm(it.label)) b.appendChild(el("span", "bp-sub", it.value));
+    b.addEventListener("click", function () { choose(it.value); });
+    return b;
+  }
+  function heading(text) {
+    var h = el("div", "bp-head-row", text); h.setAttribute("role", "presentation");
+    return h;
+  }
+  function render() {
+    var q = input.value.trim(), items = find(q), f = document.createDocumentFragment();
+    shown = []; active = -1; input.removeAttribute("aria-activedescendant");
+    function add(it) { var b = row(it, shown.length); shown.push({ it: it, b: b }); f.appendChild(b); }
+    if (!q) {
+      add({ value: "", label: "모름" });
+      var ko = items.filter(function (x) { return isKo(x.label); }), en = items.filter(function (x) { return !isKo(x.label); });
+      if (ko.length) { f.appendChild(heading("가나다")); ko.forEach(add); }
+      if (en.length) { f.appendChild(heading("ABC")); en.forEach(add); }
+    } else if (items.length) items.forEach(add);
+    else f.appendChild(el("p", "bp-empty", "찾는 브랜드가 없습니다."));
+    box.textContent = ""; box.appendChild(f); box.scrollTop = 0;
+    if (q && shown.length && !coarse) move(0);
+  }
+  function move(i) {
+    if (!shown.length) return;
+    if (active >= 0 && shown[active]) shown[active].b.classList.remove("is-active");
+    active = (i + shown.length) % shown.length;
+    var b = shown[active].b; b.classList.add("is-active");
+    input.setAttribute("aria-activedescendant", b.id);
+    var top = b.offsetTop, h = b.offsetHeight;
+    if (top < box.scrollTop) box.scrollTop = top; else if (top + h > box.scrollTop + box.clientHeight) box.scrollTop = top + h - box.clientHeight;
+  }
+  function fit() {
+    if (!sheet) return;
+    var vv = window.visualViewport;
+    if (!vv) { sheet.style.maxHeight = Math.round(window.innerHeight - 28) + "px"; return; }
+    var keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    sheet.style.bottom = Math.round(keyboard) + "px";
+    sheet.style.maxHeight = Math.round(vv.height - 28) + "px";
+  }
+  function build() {
+    if (root) return;
+    root = el("div", "bp"); root.hidden = true;
+    root.setAttribute("role", "dialog"); root.setAttribute("aria-modal", "true"); root.setAttribute("aria-label", "브랜드 선택");
+    var dim = el("div", "bp-dim"); dim.addEventListener("click", function () { close(true); });
+    sheet = el("div", "bp-sheet");
+    sheet.appendChild(el("div", "bp-grip"));
+    var top = el("div", "bp-top"); top.appendChild(el("strong", "", "브랜드"));
+    var x = el("button", "bp-close"); x.type = "button"; x.setAttribute("aria-label", "닫기"); x.addEventListener("click", function () { close(true); });
+    top.appendChild(x); sheet.appendChild(top);
+    var s = el("div", "bp-search");
+    input = el("input"); input.type = "search"; input.id = "bpq"; input.placeholder = "브랜드 검색"; input.autocomplete = "off"; input.spellcheck = false;
+    input.setAttribute("aria-label", "브랜드 검색"); input.setAttribute("role", "combobox"); input.setAttribute("aria-expanded", "true"); input.setAttribute("aria-controls", "bp-list"); input.setAttribute("enterkeyhint", "search");
+    input.addEventListener("input", render);
+    input.addEventListener("keydown", function (e) {
+      if (e.isComposing || e.keyCode === 229) return;   // 한글 조합을 확정하는 Enter 는 선택이 아니다
+      if (e.key === "ArrowDown") { e.preventDefault(); move(active + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); move(active < 0 ? shown.length - 1 : active - 1); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        if (coarse) input.blur();   // 폰의 검색 키는 키보드만 내리고, 고객이 목록에서 직접 누르게 한다
+        else if (active >= 0 && shown[active]) choose(shown[active].it.value);
+      }
+    });
+    s.appendChild(input); sheet.appendChild(s);
+    box = el("div", "bp-list"); box.id = "bp-list"; box.setAttribute("role", "listbox"); box.setAttribute("aria-label", "브랜드 목록");
+    sheet.appendChild(box);
+    foot = el("button", "bp-self", "직접 입력"); foot.type = "button"; foot.addEventListener("click", function () { choose("__self"); });
+    sheet.appendChild(foot);
+    root.appendChild(dim); root.appendChild(sheet);
+    root.addEventListener("keydown", function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === "Escape") { e.preventDefault(); close(true); return; }
+      if (e.key !== "Tab") return;
+      var f = [input, foot, x], i = f.indexOf(document.activeElement);
+      e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus();
+    });
+    document.body.appendChild(root);
+    if (window.visualViewport) { visualViewport.addEventListener("resize", fit); visualViewport.addEventListener("scroll", fit); }
+    window.addEventListener("resize", fit);
+  }
+  function open(sel, btn) {
+    if (root && !root.hidden && root.classList.contains("is-open")) return;
+    build(); clearTimeout(closeTimer);
+    current = sel; trigger = btn; arrange(sel); input.value = ""; render();
+    root.hidden = false; savedOverflow = document.documentElement.style.overflow; document.documentElement.style.overflow = "hidden";    fit(); void sheet.offsetHeight; root.classList.add("is-open");
+    if (!coarse) input.focus(); else { sheet.tabIndex = -1; sheet.focus({ preventScroll: true }); }
+  }
+  function close(refocus) {
+    if (!root || root.hidden || !root.classList.contains("is-open")) return;
+    root.classList.remove("is-open"); document.documentElement.style.overflow = savedOverflow;    if (document.activeElement && root.contains(document.activeElement)) document.activeElement.blur();
+    clearTimeout(closeTimer); closeTimer = setTimeout(function () { root.hidden = true; }, 300);
+    if (refocus && trigger && document.contains(trigger)) trigger.focus({ preventScroll: true });
+  }
+  function label(sel, btn) {
+    var o = sel.options[sel.selectedIndex], t = o ? o.text : "모름";
+    btn.textContent = t; btn.setAttribute("aria-label", "브랜드 선택, 지금 " + t);
+    btn.classList.toggle("is-empty", !sel.value);
+  }
+  function choose(value) {
+    var sel = current, btn = trigger, q = input.value.trim();
+    sel.value = value; label(sel, btn);
+    close(value !== "__self");
+    if (value === "__self") { var own = document.getElementById("rbx"); if (own && !own.value && q) own.value = q.slice(0, 30); }
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  function upgrade() {
+    if (root && !root.hidden && (!current || !document.contains(current))) close(false);
+    var sel = document.getElementById("rb");
+    if (!sel || sel.getAttribute("data-bp")) return;
+    sel.setAttribute("data-bp", "1"); arrange(sel);
+    var btn = el("button", "bp-trigger"); btn.type = "button"; btn.setAttribute("aria-haspopup", "dialog");
+    sel.classList.add("bp-native"); sel.tabIndex = -1; sel.setAttribute("aria-hidden", "true");
+    sel.parentNode.insertBefore(btn, sel.nextSibling); label(sel, btn);
+    btn.addEventListener("click", function () { open(sel, btn); });
+    // "브랜드" 글자를 눌러도 숨긴 선택 칸이 아니라 검색 화면이 열리게 한다
+    sel.parentNode.addEventListener("click", function (e) { if (e.target === sel.parentNode) { e.preventDefault(); open(sel, btn); } });
+  }
+  new MutationObserver(upgrade).observe(list, { childList: true });
+  upgrade();
+})();
+</script>
+<!--bp-js-end-->
 
